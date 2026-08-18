@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URBAN CASA - Attendance</title>
+    <title>URBAN CASA - Attendance System</title>
     
     <!-- Firebase SDKs (V8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -47,89 +47,46 @@
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+            max-width: 600px;
             margin-left: auto;
             margin-right: auto;
         }
 
-        h2, h3 { margin-top: 0; font-weight: 600; letter-spacing: 0.5px; }
+        h2, h3, h4 { margin-top: 0; font-weight: 600; letter-spacing: 0.5px; }
 
-        /* Thumb-zone friendly inputs & buttons */
+        /* Inputs & Buttons */
         input, select, button {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             margin-bottom: 15px;
             border-radius: 10px;
             border: none;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
         }
 
-        input, select {
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            outline: none;
-        }
+        input, select { background: rgba(255, 255, 255, 0.9); color: #333; outline: none; }
+        input:focus, select:focus { box-shadow: 0 0 0 2px #00c6ff; }
 
-        input:focus, select:focus {
-            box-shadow: 0 0 0 2px #00c6ff;
-        }
-
-        .btn-primary {
-            background: linear-gradient(to right, #00c6ff, #0072ff);
-            color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
-            transition: opacity 0.2s, transform 0.1s;
-        }
-
-        .btn-danger {
-            background: linear-gradient(to right, #ff416c, #ff4b2b);
-            color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
-        }
-
-        .btn-warning {
-            background: linear-gradient(to right, #f59e0b, #d97706);
-            color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(to right, #10b981, #059669);
-            color: white; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-            margin-bottom: 0;
-        }
-
+        .btn-primary { background: linear-gradient(to right, #00c6ff, #0072ff); color: white; font-weight: bold; cursor: pointer; }
+        .btn-danger { background: linear-gradient(to right, #ff416c, #ff4b2b); color: white; font-weight: bold; cursor: pointer; }
+        .btn-warning { background: linear-gradient(to right, #f59e0b, #d97706); color: white; font-weight: bold; cursor: pointer; }
+        .btn-success { background: linear-gradient(to right, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; margin-bottom: 0; }
+        .btn-small { padding: 8px 12px; font-size: 12px; margin-bottom: 0; width: auto; }
         button:active { transform: scale(0.98); }
 
+        /* Responsive Flex Containers */
+        .flex-responsive { display: flex; gap: 10px; align-items: center; width: 100%; }
+
         /* Tab Navigation */
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .nav-tabs button { margin-bottom: 0; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .nav-tabs button.active { background: linear-gradient(to right, #ff7e5f, #feb47b); font-weight: bold; border: none; }
 
-        .nav-tabs button {
-            margin-bottom: 0;
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            box-shadow: none;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .nav-tabs button.active {
-            background: linear-gradient(to right, #ff7e5f, #feb47b);
-            border: none; font-weight: bold;
-        }
-
-        /* Tables for mobile */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 350px; }
-        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2); font-size: 14px; }
+        /* Tables */
+        .table-container { overflow-x: auto; width: 100%; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; }
         th { background: rgba(0, 0, 0, 0.2); }
 
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
@@ -137,99 +94,263 @@
         .status-late { background: #f59e0b; }
         .status-weekoff { background: #3b82f6; }
 
-        .hidden { display: none; }
-        .clock-display { text-align: center; font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
-        .date-display { text-align: center; font-size: 1rem; opacity: 0.8; margin-bottom: 20px; }
+        .hidden { display: none !important; }
+        .clock-display { text-align: center; font-size: 2.2rem; font-weight: bold; margin-bottom: 5px; }
+
+        /* Date Picker Header */
+        .global-date-picker { text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; max-width: 600px; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .global-date-picker input { width: auto; margin: 0; padding: 6px 12px; }
+
+        /* Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #2a5298; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; border: 1px solid rgba(255,255,255,0.2); max-height: 90vh; overflow-y: auto; }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .flex-responsive { flex-direction: column; align-items: stretch; gap: 5px; }
+            .flex-responsive > * { width: 100% !important; margin-bottom: 10px; }
+            .nav-tabs { flex-direction: column; gap: 5px; }
+            .nav-tabs button { width: 100%; }
+            .clock-display { font-size: 1.8rem; }
+            .glass-panel { padding: 15px; }
+            th, td { font-size: 12px; padding: 8px 4px; }
+        }
     </style>
 </head>
 <body>
 
     <h1 class="header-title">URBAN CASA<br><span class="tagline">Premium Modular Kitchens & Wardrobes</span></h1>
 
-    <div class="nav-tabs">
-        <button id="btnPunch" class="active" onclick="switchTab('punch')">Punch IN/OUT</button>
-        <button id="btnReports" onclick="switchTab('reports')">Reports</button>
-        <button id="btnSettings" onclick="switchTab('settings')">Settings</button>
+    <!-- 0. LOGIN SCREEN -->
+    <div id="loginScreen" class="glass-panel">
+        <h2 style="text-align: center;">System Login</h2>
+        <input type="text" id="loginUsername" placeholder="Username (admin or ankit)" required>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+        <button class="btn-primary" onclick="handleLogin()">Login</button>
     </div>
 
-    <!-- 1. PUNCH STATION -->
-    <div id="punchTab" class="glass-panel">
-        <div class="clock-display" id="clockDisplay">00:00:00</div>
-        <div class="date-display" id="dateDisplay">Loading...</div>
-
-        <select id="punchStaffSelect">
-            <option value="" disabled selected>Select Your Profile</option>
-            <!-- Populated from Firebase -->
-        </select>
-
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button class="btn-primary" style="flex: 1;" onclick="markAttendance('in')">Punch IN</button>
-            <button class="btn-danger" style="flex: 1;" onclick="markAttendance('out')">Punch OUT</button>
-        </div>
-        <button class="btn-warning" onclick="markAttendance('weekoff')">Mark Week Off</button>
-    </div>
-
-    <!-- 2. REPORTS SECTION -->
-    <div id="reportsTab" class="glass-panel hidden">
-        <h2>Attendance Report</h2>
+    <!-- MAIN APP (Hidden until login) -->
+    <div id="mainApp" class="hidden">
         
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <input type="month" id="reportMonth" style="margin-bottom: 0;">
-            <button class="btn-success" onclick="exportExcel()">Export Excel</button>
+        <div style="text-align: right; max-width: 600px; margin: 0 auto 10px;">
+            <span style="font-size: 14px; margin-right: 15px;" id="welcomeText"></span>
+            <button class="btn-danger btn-small" onclick="logout()">Logout</button>
         </div>
 
-        <h3 style="margin-bottom: 10px;">Today's Log</h3>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>IN</th>
-                        <th>OUT</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="reportTableBody">
-                    <tr><td colspan="4" style="text-align:center;">Loading data...</td></tr>
-                </tbody>
-            </table>
+        <!-- NEW: Global Date Viewer -->
+        <div class="global-date-picker">
+            <label style="font-size: 14px; font-weight: bold;">Viewing Log Date:</label>
+            <input type="date" id="globalViewDate" onchange="changeViewDate()">
+        </div>
+
+        <div class="nav-tabs" id="navTabs">
+            <button id="btnPunch" class="active" onclick="switchTab('punch')">Dashboard</button>
+            <button id="btnReports" onclick="switchTab('reports')">Reports</button>
+            <button id="btnSettings" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <!-- 1. PUNCH STATION (Dashboard) -->
+        <div id="punchTab" class="glass-panel">
+            <div class="clock-display" id="clockDisplay">00:00:00</div>
+
+            <!-- Live Stat Cards -->
+            <div class="flex-responsive" style="margin-bottom: 20px;">
+                <div style="flex: 1; background: rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 12px; opacity: 0.8;">Present</div>
+                    <div id="statPresent" style="font-size: 24px; font-weight: bold; color: #10b981;">0</div>
+                </div>
+                <div style="flex: 1; background: rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #f59e0b;" onclick="toggleAbsentList()">
+                    <div style="font-size: 12px; opacity: 0.8;">Absent (Tap to View)</div>
+                    <div id="statAbsent" style="font-size: 24px; font-weight: bold; color: #f59e0b;">0</div>
+                </div>
+            </div>
+
+            <!-- Hidden Absent List -->
+            <div id="absentListContainer" class="hidden" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #f59e0b;">Currently Absent</h4>
+                <div id="absentNamesList" style="font-size: 14px; line-height: 1.8;">Loading...</div>
+            </div>
+
+            <h3 style="margin-bottom: 10px;">Quick Punch IN (Live)</h3>
+            <div class="flex-responsive">
+                <select id="punchStaffSelect" style="flex: 2; margin-bottom: 0;">
+                    <option value="" disabled selected>Select Staff</option>
+                </select>
+                <button class="btn-primary" style="flex: 1; margin-bottom: 0;" onclick="markAttendance('in')">Punch IN</button>
+            </div>
+            
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-warning" style="flex: 1; margin-bottom:0;" onclick="markAttendance('weekoff')">Mark Week Off</button>
+                <button class="btn-success" style="flex: 1; margin-bottom:0;" onclick="openManualEntryModal()">+ Add Past / Manual Entry</button>
+            </div>
+
+            <h3 style="margin-top: 30px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Active / Late Punches</h3>
+            <div class="table-container">
+                <table>
+                    <tbody id="activePunchesBody">
+                        <tr><td style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. REPORTS SECTION -->
+        <div id="reportsTab" class="glass-panel hidden">
+            <h2>Attendance Report</h2>
+            
+            <div class="flex-responsive" style="margin-bottom: 20px;">
+                <input type="month" id="reportMonth" style="flex: 1; margin-bottom: 0;">
+                <button class="btn-success" style="flex: 1; margin-bottom: 0;" onclick="exportExcel()">Export HR Excel</button>
+            </div>
+
+            <h3 style="margin-bottom: 10px;">Daily Log (Based on View Date)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IN</th>
+                            <th>OUT</th>
+                            <th>Status</th>
+                            <th id="editColumnHeader" class="hidden">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        <tr><td colspan="5" style="text-align:center;">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. SETTINGS SECTION -->
+        <div id="settingsTab" class="glass-panel hidden">
+            <h2>Add New Staff</h2>
+            <form id="addStaffForm">
+                <input type="text" id="staffName" placeholder="Staff Name (e.g., Suman)" required>
+                <input type="text" id="staffRole" placeholder="Designation (e.g., Modular Contractor)" required>
+                <div class="flex-responsive">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; opacity: 0.8;">Shift Start</label>
+                        <input type="time" id="shiftStart" required value="10:00">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; opacity: 0.8;">Shift End</label>
+                        <input type="time" id="shiftEnd" required value="19:00">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Save Profile</button>
+            </form>
+
+            <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">System Security</h3>
+            <div class="flex-responsive">
+                <select id="accountToUpdate" style="flex: 1; margin-bottom:0;">
+                    <option value="ankit">Security (Ankit)</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <input type="text" id="newPassword" placeholder="New Password" style="flex: 1; margin-bottom:0;">
+            </div>
+            <button class="btn-warning" style="margin-top: 15px;" onclick="changePassword()">Update Password</button>
+
+            <h3 style="margin-top: 30px;">Current Staff Profiles</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Designation</th>
+                            <th>Timing</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffListBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- 3. SETTINGS SECTION -->
-    <div id="settingsTab" class="glass-panel hidden">
-        <h2>Add New Staff</h2>
-        <form id="addStaffForm">
-            <input type="text" id="staffName" placeholder="Staff Name (e.g., Suman)" required>
+    <!-- Modals -->
+    <!-- Edit Daily Entry Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Entry: <span id="editStaffName"></span></h3>
+            <input type="hidden" id="editStaffId">
+            <label style="font-size: 12px;">Punch IN (HH:MM AM/PM)</label>
+            <input type="text" id="editPunchIn">
+            <label style="font-size: 12px;">Punch OUT (HH:MM AM/PM)</label>
+            <input type="text" id="editPunchOut">
+            <label style="font-size: 12px;">Status</label>
+            <select id="editStatus">
+                <option value="On Time">On Time</option>
+                <option value="Late">Late</option>
+                <option value="Week Off">Week Off</option>
+                <option value="Absent">Absent</option>
+            </select>
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-success" onclick="saveEdit()">Save Changes</button>
+                <button class="btn-danger" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Past / Manual Entry Modal -->
+    <div id="manualEntryModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add Manual / Past Entry</h3>
+            <label style="font-size: 12px;">Date</label>
+            <input type="date" id="manualDate" required>
+            <label style="font-size: 12px;">Staff Member</label>
+            <select id="manualStaff"></select>
             
-            <!-- Changed to text input for Manual Designations -->
-            <input type="text" id="staffRole" placeholder="Designation (e.g., Modular Contractor, Manager)" required>
+            <div class="flex-responsive">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px;">Punch IN Time</label>
+                    <input type="time" id="manualIn">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px;">Punch OUT Time</label>
+                    <input type="time" id="manualOut">
+                </div>
+            </div>
             
-            <div style="display: flex; gap: 10px;">
+            <label style="font-size: 12px;">Status</label>
+            <select id="manualStatus">
+                <option value="On Time">On Time</option>
+                <option value="Late">Late</option>
+                <option value="Week Off">Week Off</option>
+                <option value="Absent">Absent</option>
+            </select>
+            
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-success" onclick="saveManualEntry()">Save Entry</button>
+                <button class="btn-danger" onclick="closeManualEntryModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Staff Profile Modal -->
+    <div id="editStaffModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Staff Profile</h3>
+            <input type="hidden" id="editStaffProfileId">
+            <label style="font-size: 12px;">Name</label>
+            <input type="text" id="editStaffProfileName" placeholder="Staff Name" required>
+            <label style="font-size: 12px;">Designation</label>
+            <input type="text" id="editStaffProfileRole" placeholder="Designation" required>
+            
+            <div class="flex-responsive">
                 <div style="flex: 1;">
                     <label style="font-size: 12px; opacity: 0.8;">Shift Start</label>
-                    <input type="time" id="shiftStart" required value="10:00">
+                    <input type="time" id="editStaffProfileStart" required>
                 </div>
                 <div style="flex: 1;">
                     <label style="font-size: 12px; opacity: 0.8;">Shift End</label>
-                    <input type="time" id="shiftEnd" required value="19:00">
+                    <input type="time" id="editStaffProfileEnd" required>
                 </div>
             </div>
-            <button type="submit" class="btn-primary">Save Profile</button>
-        </form>
-
-        <h3 style="margin-top: 30px;">Current Staff</h3>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Designation</th>
-                        <th>Timing</th>
-                    </tr>
-                </thead>
-                <tbody id="staffListBody"></tbody>
-            </table>
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-success" onclick="saveStaffEdit()">Save Profile</button>
+                <button class="btn-danger" onclick="closeEditStaffModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -240,29 +361,83 @@
         const firebaseConfig = {
             databaseURL: "https://attendance-b6682-default-rtdb.firebaseio.com/"
         };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        
         let staffData = {}; 
+        let currentUserRole = null; 
+        let currentListenerRef = null;
 
         // ==========================================
-        // 2. UI & CLOCK LOGIC
+        // 2. AUTHENTICATION LOGIC
+        // ==========================================
+        function initAuth() {
+            db.ref('passwords').once('value', snap => {
+                if(!snap.exists()) {
+                    db.ref('passwords').set({ admin: 'admin789', ankit: '2026' });
+                }
+            });
+        }
+        initAuth();
+
+        function handleLogin() {
+            const user = document.getElementById('loginUsername').value.toLowerCase().trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+
+            db.ref('passwords').once('value', snap => {
+                const passwords = snap.val();
+                if (passwords && passwords[user] === pass) {
+                    currentUserRole = user;
+                    document.getElementById('welcomeText').innerText = `Logged in as: ${user.toUpperCase()}`;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    
+                    if(user === 'ankit') {
+                        document.getElementById('btnReports').classList.add('hidden');
+                        document.getElementById('btnSettings').classList.add('hidden');
+                    } else if (user === 'admin') {
+                        document.getElementById('btnReports').classList.remove('hidden');
+                        document.getElementById('btnSettings').classList.remove('hidden');
+                        document.getElementById('editColumnHeader').classList.remove('hidden');
+                    }
+                    
+                    document.getElementById('globalViewDate').value = getTodayDateString();
+                    document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
+                    switchTab('punch');
+                    changeViewDate(); // Load initial data
+                } else {
+                    alert("Invalid Username or Password!");
+                }
+            });
+        }
+
+        function logout() {
+            currentUserRole = null;
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            if(currentListenerRef) currentListenerRef.off();
+        }
+
+        function changePassword() {
+            const account = document.getElementById('accountToUpdate').value;
+            const newPass = document.getElementById('newPassword').value.trim();
+            if(newPass.length < 4) { alert("Password too short!"); return; }
+            db.ref(`passwords/${account}`).set(newPass).then(() => {
+                alert(`${account.toUpperCase()} password updated successfully!`);
+                document.getElementById('newPassword').value = '';
+            });
+        }
+
+        // ==========================================
+        // 3. UI, CLOCK & DATE LOGIC
         // ==========================================
         function switchTab(tab) {
-            if(tab === 'settings') {
-                const pass = prompt("Enter Admin Password:");
-                if(pass !== "admin789") {
-                    alert("Incorrect Password!");
-                    return;
-                }
-            }
-
             document.getElementById('punchTab').classList.add('hidden');
             document.getElementById('reportsTab').classList.add('hidden');
             document.getElementById('settingsTab').classList.add('hidden');
+            
             document.getElementById('btnPunch').classList.remove('active');
             document.getElementById('btnReports').classList.remove('active');
             document.getElementById('btnSettings').classList.remove('active');
@@ -271,10 +446,12 @@
             document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
         }
 
+        function toggleAbsentList() {
+            document.getElementById('absentListContainer').classList.toggle('hidden');
+        }
+
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('clockDisplay').innerText = now.toLocaleTimeString('en-IN');
-            document.getElementById('dateDisplay').innerText = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString('en-IN');
         }, 1000);
 
         function getTodayDateString() {
@@ -282,35 +459,111 @@
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         }
 
-        // Set default month for the report picker
-        document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
+        function changeViewDate() {
+            const viewDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            
+            if(currentListenerRef) currentListenerRef.off();
+            currentListenerRef = db.ref(`attendance/${viewDateStr}`);
+            
+            currentListenerRef.on('value', (snapshot) => {
+                const logs = snapshot.val() || {};
+                const reportTableBody = document.getElementById('reportTableBody');
+                const activePunchesBody = document.getElementById('activePunchesBody');
+                
+                let reportHTML = "", activeHTML = "", absentHTML = "";
+                let presentCount = 0, absentCount = 0;
+
+                for(const staffId in staffData) {
+                    const staff = staffData[staffId];
+                    if(!logs[staffId]) {
+                        absentCount++;
+                        const waMsg = encodeURIComponent(`Hi ${staff.name}, just a reminder regarding your attendance for ${viewDateStr} at URBAN CASA.`);
+                        absentHTML += `
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 5px 0;">
+                                <span>${staff.name}</span>
+                                <a href="https://wa.me/?text=${waMsg}" target="_blank" style="color: #10b981; text-decoration: none; font-weight: bold; font-size: 12px;">Send WhatsApp</a>
+                            </div>`;
+                    }
+                }
+
+                document.getElementById('statAbsent').innerText = absentCount;
+                document.getElementById('absentNamesList').innerHTML = absentHTML || "<div>Everyone is present!</div>";
+
+                if (Object.keys(logs).length === 0) {
+                    reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No punches found for this date.</td></tr>';
+                    activePunchesBody.innerHTML = '<tr><td style="text-align:center;">No active staff.</td></tr>';
+                    document.getElementById('statPresent').innerText = "0";
+                    return;
+                }
+
+                for (const staffId in logs) {
+                    const log = logs[staffId];
+                    if (!log || !log.name) continue;
+
+                    if(log.status === 'On Time' || log.status === 'Late') presentCount++;
+
+                    let statusClass = 'status-ontime';
+                    if(log.status === 'Late') statusClass = 'status-late';
+                    if(log.status === 'Week Off') statusClass = 'status-weekoff';
+
+                    const pIn = log.punchIn || '--';
+                    const pOut = log.punchOut ? log.punchOut : '--';
+                    let adminAction = currentUserRole === 'admin' 
+                        ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${pIn}', '${pOut}', '${log.status}')">Edit</button></td>` : '';
+
+                    reportHTML += `
+                        <tr>
+                            <td><strong>${log.name}</strong></td>
+                            <td>${pIn}</td>
+                            <td>${pOut}</td>
+                            <td><span class="status-badge ${statusClass}">${log.status || 'N/A'}</span></td>
+                            ${adminAction}
+                        </tr>`;
+
+                    if(log.punchIn && !log.punchOut) {
+                        let lateWarning = log.status === 'Late' ? '<span style="color: #f59e0b; font-size: 11px; margin-left: 5px;">(LATE)</span>' : '';
+                        activeHTML += `
+                        <tr>
+                            <td style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                                <div><strong>${log.name}</strong> ${lateWarning}<br><span style="font-size: 11px; opacity: 0.8;">In: ${pIn}</span></div>
+                                <button class="btn-danger btn-small" onclick="markAttendance('out', '${staffId}', '${viewDateStr}')">Punch OUT</button>
+                            </td>
+                        </tr>`;
+                    }
+                }
+                
+                document.getElementById('statPresent').innerText = presentCount;
+                reportTableBody.innerHTML = reportHTML;
+                activePunchesBody.innerHTML = activeHTML || '<tr><td style="text-align:center;">No active staff.</td></tr>';
+            });
+        }
 
         // ==========================================
-        // 3. DATABASE READ/WRITE OPERATIONS
+        // 4. DATABASE STAFF & PUNCH LOGIC
         // ==========================================
-
-        // Fetch Staff List
         db.ref('staff').on('value', (snapshot) => {
             staffData = snapshot.val() || {};
             const staffListBody = document.getElementById('staffListBody');
             const punchStaffSelect = document.getElementById('punchStaffSelect');
             
             let tableHTML = "";
-            let selectHTML = '<option value="" disabled selected>Select Your Profile</option>';
+            let selectHTML = '<option value="" disabled selected>Select Staff</option>';
 
             for (const key in staffData) {
                 const staff = staffData[key];
                 if (!staff || !staff.name) continue; 
                 
-                tableHTML += `<tr><td>${staff.name}</td><td>${staff.role}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td></tr>`;
-                selectHTML += `<option value="${key}">${staff.name} (${staff.role})</option>`;
+                let editBtn = `<button class="btn-warning btn-small" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}')">Edit</button>`;
+                tableHTML += `<tr><td>${staff.name}</td><td>${staff.role}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td><td>${editBtn}</td></tr>`;
+                selectHTML += `<option value="${key}">${staff.name}</option>`;
             }
-
             staffListBody.innerHTML = tableHTML;
             punchStaffSelect.innerHTML = selectHTML;
+            
+            // Re-trigger live feed to update absent calculations if staff changes
+            if(currentUserRole) changeViewDate();
         });
 
-        // Add Staff
         document.getElementById('addStaffForm').addEventListener('submit', function(e) {
             e.preventDefault();
             db.ref('staff').push({
@@ -321,26 +574,23 @@
             }).then(() => {
                 alert("Staff added successfully!");
                 this.reset();
-            }).catch(error => alert("Database Error: " + error.message));
+            });
         });
 
-        // Main Attendance Logic (Punch IN, OUT, Week Off)
-        function markAttendance(type) {
-            const staffId = document.getElementById('punchStaffSelect').value;
-            if (!staffId) { alert("Please select your profile first!"); return; }
+        function markAttendance(type, directStaffId = null, forceDateStr = null) {
+            const staffId = directStaffId || document.getElementById('punchStaffSelect').value;
+            if (!staffId) { alert("Please select staff profile first!"); return; }
 
+            // Real-time punches ALWAYS use the target Date string (defaults to selected view date or today)
+            const targetDateStr = forceDateStr || document.getElementById('globalViewDate').value || getTodayDateString();
             const staff = staffData[staffId];
             const now = new Date();
             const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-            const todayStr = getTodayDateString();
-            const nowTs = Date.now(); // Storing exact timestamp for precise math
+            const nowTs = Date.now();
 
             if (type === 'weekoff') {
-                db.ref(`attendance/${todayStr}/${staffId}`).update({
-                    name: staff.name,
-                    status: 'Week Off'
-                }).then(() => {
-                    alert(`${staff.name} marked as Week Off today.`);
+                db.ref(`attendance/${targetDateStr}/${staffId}`).update({ name: staff.name, status: 'Week Off' }).then(() => {
+                    alert(`${staff.name} marked as Week Off for ${targetDateStr}.`);
                     document.getElementById('punchStaffSelect').value = "";
                 });
                 return;
@@ -349,94 +599,144 @@
             if (type === 'in') {
                 const [shiftHour, shiftMin] = staff.shiftStart.split(':').map(Number);
                 const shiftTime = new Date();
-                shiftTime.setHours(shiftHour, shiftMin + 15, 0); // 15 min grace period
-
+                shiftTime.setHours(shiftHour, shiftMin + 15, 0); 
                 const status = now > shiftTime ? 'Late' : 'On Time';
 
-                db.ref(`attendance/${todayStr}/${staffId}`).update({
-                    name: staff.name,
-                    punchIn: timeString,
-                    punchInTs: nowTs,
-                    status: status
-                }).then(() => {
-                    alert(`${staff.name} punched IN at ${timeString}`);
-                    document.getElementById('punchStaffSelect').value = "";
-                });
-                
-            } else if (type === 'out') {
-                // To calculate OT minus late, we must pull the punch in time first
-                db.ref(`attendance/${todayStr}/${staffId}`).once('value').then(snap => {
-                    const data = snap.val();
-                    if(!data || !data.punchInTs) {
-                        alert("Error: Cannot Punch OUT before Punching IN!");
+                db.ref(`attendance/${targetDateStr}/${staffId}`).once('value').then(snap => {
+                    if(snap.exists() && snap.val().punchIn) {
+                        alert("Staff already punched IN for this date!");
                         return;
                     }
+                    db.ref(`attendance/${targetDateStr}/${staffId}`).update({
+                        name: staff.name, punchIn: timeString, punchInTs: nowTs, status: status
+                    }).then(() => document.getElementById('punchStaffSelect').value = "");
+                });
+            } else if (type === 'out') {
+                db.ref(`attendance/${targetDateStr}/${staffId}`).once('value').then(snap => {
+                    const data = snap.val();
+                    if(!data || !data.punchInTs) { alert("Error: Cannot Punch OUT before Punching IN!"); return; }
 
-                    // Net OT Math: (Total Time Worked) - (Total Shift Time required)
                     const workedMins = (nowTs - data.punchInTs) / (1000 * 60);
-
                     const [sH, sM] = staff.shiftStart.split(':').map(Number);
                     const [eH, eM] = staff.shiftEnd.split(':').map(Number);
                     const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
 
                     let otMins = workedMins - shiftMinsRequired;
-                    if(otMins < 0) otMins = 0; // No negative OT if they leave early
+                    if(otMins < 0) otMins = 0; 
                     const otHours = (otMins / 60).toFixed(2);
 
-                    db.ref(`attendance/${todayStr}/${staffId}`).update({
-                        punchOut: timeString,
-                        punchOutTs: nowTs,
-                        otHours: parseFloat(otHours)
-                    }).then(() => {
-                        alert(`${staff.name} punched OUT. OT logged: ${otHours} hrs.`);
-                        document.getElementById('punchStaffSelect').value = "";
+                    db.ref(`attendance/${targetDateStr}/${staffId}`).update({
+                        punchOut: timeString, punchOutTs: nowTs, otHours: parseFloat(otHours)
                     });
                 });
             }
         }
 
-        // Live Today's Report Table
-        db.ref(`attendance/${getTodayDateString()}`).on('value', (snapshot) => {
-            const logs = snapshot.val() || {};
-            const reportTableBody = document.getElementById('reportTableBody');
-            let reportHTML = "";
+        // ==========================================
+        // 5. MODAL EDITING LOGIC (Admin & Manual Entry)
+        // ==========================================
+        function openEditModal(id, name, pIn, pOut, status) {
+            document.getElementById('editStaffId').value = id;
+            document.getElementById('editStaffName').innerText = name;
+            document.getElementById('editPunchIn').value = pIn === '--' ? '' : pIn;
+            document.getElementById('editPunchOut').value = pOut === '--' ? '' : pOut;
+            document.getElementById('editStatus').value = status;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+        function saveEdit() {
+            const id = document.getElementById('editStaffId').value;
+            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            
+            db.ref(`attendance/${targetDateStr}/${id}`).update({
+                punchIn: document.getElementById('editPunchIn').value,
+                punchOut: document.getElementById('editPunchOut').value,
+                status: document.getElementById('editStatus').value
+            }).then(() => closeEditModal());
+        }
 
-            if (Object.keys(logs).length === 0) {
-                reportTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No punches today.</td></tr>';
-                return;
+        function openEditStaffModal(id, name, role, start, end) {
+            document.getElementById('editStaffProfileId').value = id;
+            document.getElementById('editStaffProfileName').value = name;
+            document.getElementById('editStaffProfileRole').value = role;
+            document.getElementById('editStaffProfileStart').value = start;
+            document.getElementById('editStaffProfileEnd').value = end;
+            document.getElementById('editStaffModal').classList.remove('hidden');
+        }
+        function closeEditStaffModal() { document.getElementById('editStaffModal').classList.add('hidden'); }
+        function saveStaffEdit() {
+            const id = document.getElementById('editStaffProfileId').value;
+            const name = document.getElementById('editStaffProfileName').value;
+            const role = document.getElementById('editStaffProfileRole').value;
+            const start = document.getElementById('editStaffProfileStart').value;
+            const end = document.getElementById('editStaffProfileEnd').value;
+
+            if(!name || !role || !start || !end) { alert("All fields are required!"); return; }
+
+            db.ref(`staff/${id}`).update({ name, role, shiftStart: start, shiftEnd: end }).then(() => {
+                alert("Profile updated successfully!");
+                closeEditStaffModal();
+            });
+        }
+
+        function openManualEntryModal() {
+            document.getElementById('manualDate').value = document.getElementById('globalViewDate').value || getTodayDateString();
+            let staffOptions = '<option value="" disabled selected>Select Staff</option>';
+            for (let key in staffData) staffOptions += `<option value="${key}">${staffData[key].name}</option>`;
+            document.getElementById('manualStaff').innerHTML = staffOptions;
+            document.getElementById('manualIn').value = '';
+            document.getElementById('manualOut').value = '';
+            document.getElementById('manualStatus').value = 'On Time';
+            document.getElementById('manualEntryModal').classList.remove('hidden');
+        }
+        function closeManualEntryModal() { document.getElementById('manualEntryModal').classList.add('hidden'); }
+        function saveManualEntry() {
+            const dateStr = document.getElementById('manualDate').value;
+            const staffId = document.getElementById('manualStaff').value;
+            const timeIn24 = document.getElementById('manualIn').value;
+            const timeOut24 = document.getElementById('manualOut').value;
+            const status = document.getElementById('manualStatus').value;
+
+            if(!dateStr || !staffId) { alert("Date and Staff are required!"); return; }
+            const staff = staffData[staffId];
+            let payload = { name: staff.name, status: status };
+
+            function format12H(time24) {
+                if(!time24) return null;
+                const [h, m] = time24.split(':');
+                const d = new Date(); d.setHours(h, m, 0);
+                return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            }
+            function getTimestamp(dStr, time24) {
+                if(!time24) return null;
+                return new Date(`${dStr}T${time24}:00`).getTime();
             }
 
-            for (const key in logs) {
-                const log = logs[key];
-                if (!log || !log.name) continue;
+            if(timeIn24) { payload.punchIn = format12H(timeIn24); payload.punchInTs = getTimestamp(dateStr, timeIn24); }
+            if(timeOut24) { payload.punchOut = format12H(timeOut24); payload.punchOutTs = getTimestamp(dateStr, timeOut24); }
 
-                let statusClass = 'status-ontime';
-                if(log.status === 'Late') statusClass = 'status-late';
-                if(log.status === 'Week Off') statusClass = 'status-weekoff';
-
-                const pIn = log.punchIn || '--';
-                const pOut = log.punchOut ? log.punchOut : '--';
-
-                reportHTML += `
-                    <tr>
-                        <td><strong>${log.name}</strong></td>
-                        <td>${pIn}</td>
-                        <td>${pOut}</td>
-                        <td><span class="status-badge ${statusClass}">${log.status || 'N/A'}</span></td>
-                    </tr>
-                `;
+            if(timeIn24 && timeOut24 && status !== 'Week Off' && status !== 'Absent') {
+                const workedMins = (payload.punchOutTs - payload.punchInTs) / (1000 * 60);
+                const [sH, sM] = staff.shiftStart.split(':').map(Number);
+                const [eH, eM] = staff.shiftEnd.split(':').map(Number);
+                const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
+                let otMins = workedMins - shiftMinsRequired;
+                if(otMins < 0) otMins = 0; 
+                payload.otHours = parseFloat((otMins / 60).toFixed(2));
             }
-            reportTableBody.innerHTML = reportHTML;
-        });
+
+            db.ref(`attendance/${dateStr}/${staffId}`).update(payload).then(() => {
+                alert(`Manual entry saved for ${staff.name} on ${dateStr}.`);
+                closeManualEntryModal();
+            });
+        }
 
         // ==========================================
-        // 4. EXCEL EXPORT LOGIC
+        // 6. HR EXCEL EXPORT LOGIC
         // ==========================================
         function exportExcel() {
-            const monthStr = document.getElementById('reportMonth').value; // 'YYYY-MM'
+            const monthStr = document.getElementById('reportMonth').value; 
             if(!monthStr) { alert("Please select a month"); return; }
-
-            // Get total days in selected month
             const [year, month] = monthStr.split('-');
             const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -444,52 +744,37 @@
                 const allData = snap.val() || {};
                 const stats = {};
 
-                // Setup default stats profile based on current staff list
-                for(let key in staffData) {
-                    stats[key] = {
-                        name: staffData[key].name,
-                        role: staffData[key].role,
-                        present: 0,
-                        weekoff: 0,
-                        ot: 0
-                    };
-                }
+                for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, weekoff: 0, ot: 0 };
 
-                // Loop through dates and aggregate data for the chosen month
                 for(let dateKey in allData) {
                     if(dateKey.startsWith(monthStr)) {
                         const dailyData = allData[dateKey];
                         for(let sId in dailyData) {
                             if(stats[sId]) {
                                 const record = dailyData[sId];
-                                if(record.status === 'On Time' || record.status === 'Late') {
-                                    stats[sId].present++;
-                                } else if(record.status === 'Week Off') {
-                                    stats[sId].weekoff++;
-                                }
-                                if(record.otHours) {
-                                    stats[sId].ot += record.otHours;
-                                }
+                                if(record.status === 'On Time' || record.status === 'Late') stats[sId].present++;
+                                else if(record.status === 'Week Off') stats[sId].weekoff++;
+                                if(record.otHours) stats[sId].ot += record.otHours;
                             }
                         }
                     }
                 }
 
-                // Construct CSV String
-                let csv = "S.No,Staff Name,Designation,Month Days,Present Days,Weekoff Days,OT Hrs\n";
+                let csv = "S.No,Staff Name,Total Month Days,Present Days,Week Off Days,OT Hrs (Net),Extra Days\n";
                 let index = 1;
+                
                 for(let sId in stats) {
                     const st = stats[sId];
-                    csv += `${index},${st.name},${st.role},${daysInMonth},${st.present},${st.weekoff},${st.ot.toFixed(2)}\n`;
+                    let extraDays = st.present > 26 ? (st.present - 26) : 0;
+                    csv += `${index},${st.name},${daysInMonth},${st.present},${st.weekoff},${st.ot.toFixed(2)},${extraDays}\n`;
                     index++;
                 }
 
-                // Trigger automatic download
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.setAttribute('href', url);
-                link.setAttribute('download', `URBAN_CASA_Report_${monthStr}.csv`);
+                link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

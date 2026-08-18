@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URBAN CASA - Attendance</title>
+    
+    <!-- Firebase SDKs (V8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* Base & Vibrant Gradient Background */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .header-title {
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 1.8rem;
+            line-height: 1.2;
+        }
+        
+        .tagline {
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h2, h3 { margin-top: 0; font-weight: 600; letter-spacing: 0.5px; }
+
+        /* Thumb-zone friendly inputs & buttons */
+        input, select, button {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input, select {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            box-shadow: 0 0 0 2px #00c6ff;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.4);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn-danger {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(to right, #f59e0b, #d97706);
+            color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #10b981, #059669);
+            color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            margin-bottom: 0;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        /* Tab Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .nav-tabs button {
+            margin-bottom: 0;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            box-shadow: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-tabs button.active {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            border: none; font-weight: bold;
+        }
+
+        /* Tables for mobile */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 350px; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2); font-size: 14px; }
+        th { background: rgba(0, 0, 0, 0.2); }
+
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
+        .status-ontime { background: #10b981; }
+        .status-late { background: #f59e0b; }
+        .status-weekoff { background: #3b82f6; }
+
+        .hidden { display: none; }
+        .clock-display { text-align: center; font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
+        .date-display { text-align: center; font-size: 1rem; opacity: 0.8; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1 class="header-title">URBAN CASA<br><span class="tagline">Premium Modular Kitchens & Wardrobes</span></h1>
+
+    <div class="nav-tabs">
+        <button id="btnPunch" class="active" onclick="switchTab('punch')">Punch IN/OUT</button>
+        <button id="btnReports" onclick="switchTab('reports')">Reports</button>
+        <button id="btnSettings" onclick="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- 1. PUNCH STATION -->
+    <div id="punchTab" class="glass-panel">
+        <div class="clock-display" id="clockDisplay">00:00:00</div>
+        <div class="date-display" id="dateDisplay">Loading...</div>
+
+        <select id="punchStaffSelect">
+            <option value="" disabled selected>Select Your Profile</option>
+            <!-- Populated from Firebase -->
+        </select>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn-primary" style="flex: 1;" onclick="markAttendance('in')">Punch IN</button>
+            <button class="btn-danger" style="flex: 1;" onclick="markAttendance('out')">Punch OUT</button>
+        </div>
+        <button class="btn-warning" onclick="markAttendance('weekoff')">Mark Week Off</button>
+    </div>
+
+    <!-- 2. REPORTS SECTION -->
+    <div id="reportsTab" class="glass-panel hidden">
+        <h2>Attendance Report</h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="month" id="reportMonth" style="margin-bottom: 0;">
+            <button class="btn-success" onclick="exportExcel()">Export Excel</button>
+        </div>
+
+        <h3 style="margin-bottom: 10px;">Today's Log</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>IN</th>
+                        <th>OUT</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                    <tr><td colspan="4" style="text-align:center;">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. SETTINGS SECTION -->
+    <div id="settingsTab" class="glass-panel hidden">
+        <h2>Add New Staff</h2>
+        <form id="addStaffForm">
+            <input type="text" id="staffName" placeholder="Staff Name (e.g., Suman)" required>
+            
+            <!-- Changed to text input for Manual Designations -->
+            <input type="text" id="staffRole" placeholder="Designation (e.g., Modular Contractor, Manager)" required>
+            
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; opacity: 0.8;">Shift Start</label>
+                    <input type="time" id="shiftStart" required value="10:00">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; opacity: 0.8;">Shift End</label>
+                    <input type="time" id="shiftEnd" required value="19:00">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Save Profile</button>
+        </form>
+
+        <h3 style="margin-top: 30px;">Current Staff</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Designation</th>
+                        <th>Timing</th>
+                    </tr>
+                </thead>
+                <tbody id="staffListBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. FIREBASE INITIALIZATION
+        // ==========================================
+        const firebaseConfig = {
+            databaseURL: "https://attendance-b6682-default-rtdb.firebaseio.com/"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const db = firebase.database();
+        let staffData = {}; 
+
+        // ==========================================
+        // 2. UI & CLOCK LOGIC
+        // ==========================================
+        function switchTab(tab) {
+            if(tab === 'settings') {
+                const pass = prompt("Enter Admin Password:");
+                if(pass !== "admin789") {
+                    alert("Incorrect Password!");
+                    return;
+                }
+            }
+
+            document.getElementById('punchTab').classList.add('hidden');
+            document.getElementById('reportsTab').classList.add('hidden');
+            document.getElementById('settingsTab').classList.add('hidden');
+            document.getElementById('btnPunch').classList.remove('active');
+            document.getElementById('btnReports').classList.remove('active');
+            document.getElementById('btnSettings').classList.remove('active');
+
+            document.getElementById(tab + 'Tab').classList.remove('hidden');
+            document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clockDisplay').innerText = now.toLocaleTimeString('en-IN');
+            document.getElementById('dateDisplay').innerText = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }, 1000);
+
+        function getTodayDateString() {
+            const date = new Date();
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Set default month for the report picker
+        document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
+
+        // ==========================================
+        // 3. DATABASE READ/WRITE OPERATIONS
+        // ==========================================
+
+        // Fetch Staff List
+        db.ref('staff').on('value', (snapshot) => {
+            staffData = snapshot.val() || {};
+            const staffListBody = document.getElementById('staffListBody');
+            const punchStaffSelect = document.getElementById('punchStaffSelect');
+            
+            let tableHTML = "";
+            let selectHTML = '<option value="" disabled selected>Select Your Profile</option>';
+
+            for (const key in staffData) {
+                const staff = staffData[key];
+                if (!staff || !staff.name) continue; 
+                
+                tableHTML += `<tr><td>${staff.name}</td><td>${staff.role}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td></tr>`;
+                selectHTML += `<option value="${key}">${staff.name} (${staff.role})</option>`;
+            }
+
+            staffListBody.innerHTML = tableHTML;
+            punchStaffSelect.innerHTML = selectHTML;
+        });
+
+        // Add Staff
+        document.getElementById('addStaffForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            db.ref('staff').push({
+                name: document.getElementById('staffName').value,
+                role: document.getElementById('staffRole').value,
+                shiftStart: document.getElementById('shiftStart').value,
+                shiftEnd: document.getElementById('shiftEnd').value
+            }).then(() => {
+                alert("Staff added successfully!");
+                this.reset();
+            }).catch(error => alert("Database Error: " + error.message));
+        });
+
+        // Main Attendance Logic (Punch IN, OUT, Week Off)
+        function markAttendance(type) {
+            const staffId = document.getElementById('punchStaffSelect').value;
+            if (!staffId) { alert("Please select your profile first!"); return; }
+
+            const staff = staffData[staffId];
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const todayStr = getTodayDateString();
+            const nowTs = Date.now(); // Storing exact timestamp for precise math
+
+            if (type === 'weekoff') {
+                db.ref(`attendance/${todayStr}/${staffId}`).update({
+                    name: staff.name,
+                    status: 'Week Off'
+                }).then(() => {
+                    alert(`${staff.name} marked as Week Off today.`);
+                    document.getElementById('punchStaffSelect').value = "";
+                });
+                return;
+            }
+
+            if (type === 'in') {
+                const [shiftHour, shiftMin] = staff.shiftStart.split(':').map(Number);
+                const shiftTime = new Date();
+                shiftTime.setHours(shiftHour, shiftMin + 15, 0); // 15 min grace period
+
+                const status = now > shiftTime ? 'Late' : 'On Time';
+
+                db.ref(`attendance/${todayStr}/${staffId}`).update({
+                    name: staff.name,
+                    punchIn: timeString,
+                    punchInTs: nowTs,
+                    status: status
+                }).then(() => {
+                    alert(`${staff.name} punched IN at ${timeString}`);
+                    document.getElementById('punchStaffSelect').value = "";
+                });
+                
+            } else if (type === 'out') {
+                // To calculate OT minus late, we must pull the punch in time first
+                db.ref(`attendance/${todayStr}/${staffId}`).once('value').then(snap => {
+                    const data = snap.val();
+                    if(!data || !data.punchInTs) {
+                        alert("Error: Cannot Punch OUT before Punching IN!");
+                        return;
+                    }
+
+                    // Net OT Math: (Total Time Worked) - (Total Shift Time required)
+                    const workedMins = (nowTs - data.punchInTs) / (1000 * 60);
+
+                    const [sH, sM] = staff.shiftStart.split(':').map(Number);
+                    const [eH, eM] = staff.shiftEnd.split(':').map(Number);
+                    const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
+
+                    let otMins = workedMins - shiftMinsRequired;
+                    if(otMins < 0) otMins = 0; // No negative OT if they leave early
+                    const otHours = (otMins / 60).toFixed(2);
+
+                    db.ref(`attendance/${todayStr}/${staffId}`).update({
+                        punchOut: timeString,
+                        punchOutTs: nowTs,
+                        otHours: parseFloat(otHours)
+                    }).then(() => {
+                        alert(`${staff.name} punched OUT. OT logged: ${otHours} hrs.`);
+                        document.getElementById('punchStaffSelect').value = "";
+                    });
+                });
+            }
+        }
+
+        // Live Today's Report Table
+        db.ref(`attendance/${getTodayDateString()}`).on('value', (snapshot) => {
+            const logs = snapshot.val() || {};
+            const reportTableBody = document.getElementById('reportTableBody');
+            let reportHTML = "";
+
+            if (Object.keys(logs).length === 0) {
+                reportTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No punches today.</td></tr>';
+                return;
+            }
+
+            for (const key in logs) {
+                const log = logs[key];
+                if (!log || !log.name) continue;
+
+                let statusClass = 'status-ontime';
+                if(log.status === 'Late') statusClass = 'status-late';
+                if(log.status === 'Week Off') statusClass = 'status-weekoff';
+
+                const pIn = log.punchIn || '--';
+                const pOut = log.punchOut ? log.punchOut : '--';
+
+                reportHTML += `
+                    <tr>
+                        <td><strong>${log.name}</strong></td>
+                        <td>${pIn}</td>
+                        <td>${pOut}</td>
+                        <td><span class="status-badge ${statusClass}">${log.status || 'N/A'}</span></td>
+                    </tr>
+                `;
+            }
+            reportTableBody.innerHTML = reportHTML;
+        });
+
+        // ==========================================
+        // 4. EXCEL EXPORT LOGIC
+        // ==========================================
+        function exportExcel() {
+            const monthStr = document.getElementById('reportMonth').value; // 'YYYY-MM'
+            if(!monthStr) { alert("Please select a month"); return; }
+
+            // Get total days in selected month
+            const [year, month] = monthStr.split('-');
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            db.ref('attendance').once('value').then(snap => {
+                const allData = snap.val() || {};
+                const stats = {};
+
+                // Setup default stats profile based on current staff list
+                for(let key in staffData) {
+                    stats[key] = {
+                        name: staffData[key].name,
+                        role: staffData[key].role,
+                        present: 0,
+                        weekoff: 0,
+                        ot: 0
+                    };
+                }
+
+                // Loop through dates and aggregate data for the chosen month
+                for(let dateKey in allData) {
+                    if(dateKey.startsWith(monthStr)) {
+                        const dailyData = allData[dateKey];
+                        for(let sId in dailyData) {
+                            if(stats[sId]) {
+                                const record = dailyData[sId];
+                                if(record.status === 'On Time' || record.status === 'Late') {
+                                    stats[sId].present++;
+                                } else if(record.status === 'Week Off') {
+                                    stats[sId].weekoff++;
+                                }
+                                if(record.otHours) {
+                                    stats[sId].ot += record.otHours;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Construct CSV String
+                let csv = "S.No,Staff Name,Designation,Month Days,Present Days,Weekoff Days,OT Hrs\n";
+                let index = 1;
+                for(let sId in stats) {
+                    const st = stats[sId];
+                    csv += `${index},${st.name},${st.role},${daysInMonth},${st.present},${st.weekoff},${st.ot.toFixed(2)}\n`;
+                    index++;
+                }
+
+                // Trigger automatic download
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `URBAN_CASA_Report_${monthStr}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+    </script>
+</body>
+</html>

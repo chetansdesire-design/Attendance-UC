@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URBAN CASA - Attendance System</title>
+    
+    <!-- Firebase SDKs (V8) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* Base & Vibrant Gradient Background */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .header-title {
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 1.8rem;
+            line-height: 1.2;
+        }
+        
+        .tagline {
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h2, h3, h4 { margin-top: 0; font-weight: 600; letter-spacing: 0.5px; }
+
+        /* Inputs & Buttons */
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        input, select { background: rgba(255, 255, 255, 0.9); color: #333; outline: none; }
+        input:focus, select:focus { box-shadow: 0 0 0 2px #00c6ff; }
+
+        .btn-primary { background: linear-gradient(to right, #00c6ff, #0072ff); color: white; font-weight: bold; cursor: pointer; }
+        .btn-danger { background: linear-gradient(to right, #ff416c, #ff4b2b); color: white; font-weight: bold; cursor: pointer; }
+        .btn-warning { background: linear-gradient(to right, #f59e0b, #d97706); color: white; font-weight: bold; cursor: pointer; }
+        .btn-success { background: linear-gradient(to right, #10b981, #059669); color: white; font-weight: bold; cursor: pointer; margin-bottom: 0; }
+        .btn-whatsapp { background: linear-gradient(to right, #25D366, #128C7E); color: white; font-weight: bold; cursor: pointer; margin-bottom: 0; }
+        .btn-small { padding: 8px 12px; font-size: 12px; margin-bottom: 0; width: auto; }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Responsive Flex Containers */
+        .flex-responsive { display: flex; gap: 10px; align-items: center; width: 100%; }
+
+        /* Tab Navigation */
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; flex-wrap: wrap; justify-content: center; }
+        .nav-tabs button { margin-bottom: 0; flex: 1; min-width: 100px; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .nav-tabs button.active { background: linear-gradient(to right, #ff7e5f, #feb47b); font-weight: bold; border: none; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; width: 100%; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; }
+        th { background: rgba(0, 0, 0, 0.2); }
+
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
+        .status-ontime { background: #10b981; }
+        .status-late { background: #f59e0b; }
+        .status-absent { background: #ff416c; }
+        .status-halfday { background: #8b5cf6; }
+
+        .hidden { display: none !important; }
+        .clock-display { text-align: center; font-size: 2.2rem; font-weight: bold; margin-bottom: 5px; }
+        
+        /* Live Timer Animations */
+        .live-timer { font-size: 2.5rem; font-weight: bold; color: #10b981; text-align: center; margin: 15px 0; font-family: monospace; }
+        .pulse-dot { display: inline-block; width: 12px; height: 12px; background-color: #10b981; border-radius: 50%; margin-right: 8px; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Date Picker Header */
+        .global-date-picker { text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; max-width: 600px; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .global-date-picker input { width: auto; margin: 0; padding: 6px 12px; }
+
+        /* Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #2a5298; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; border: 1px solid rgba(255,255,255,0.2); max-height: 90vh; overflow-y: auto; }
+        .history-modal-content { max-width: 500px; }
+
+        /* Toast Notification */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff416c; color: white; padding: 15px 25px; border-radius: 30px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: opacity 0.5s ease; text-align: center; width: 80%; max-width: 400px; }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .flex-responsive { flex-direction: column; align-items: stretch; gap: 5px; }
+            .flex-responsive > * { width: 100% !important; margin-bottom: 10px; }
+            .nav-tabs { gap: 5px; }
+            .nav-tabs button { width: 48%; flex: auto; }
+            .clock-display { font-size: 1.8rem; }
+            .glass-panel { padding: 15px; }
+            th, td { font-size: 12px; padding: 8px 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="toast hidden"></div>
+
+    <h1 class="header-title">URBAN CASA<br><span class="tagline">Premium Modular Kitchens & Wardrobes</span></h1>
+
+    <!-- 0. LOGIN SCREEN -->
+    <div id="loginScreen" class="glass-panel">
+        <h2 style="text-align: center; margin-bottom: 15px;">System Login</h2>
+        
+        <div class="nav-tabs" style="margin-bottom: 15px;">
+            <button id="btnToggleMgmt" class="active" onclick="toggleLoginMode('mgmt')">Management</button>
+            <button id="btnToggleStaff" onclick="toggleLoginMode('staff')">Staff Portal</button>
+        </div>
+
+        <!-- Management Login -->
+        <div id="mgmtLoginBox">
+            <input type="text" id="loginUsername" placeholder="Username (admin or ankit)">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button class="btn-primary" onclick="handleLogin('mgmt')">Secure Login</button>
+        </div>
+
+        <!-- Staff Login -->
+        <div id="staffLoginBox" class="hidden">
+            <select id="loginStaffSelect">
+                <option value="" disabled selected>Select Your Profile</option>
+            </select>
+            <input type="password" id="loginStaffPin" placeholder="4-Digit PIN (Default: 1234)">
+            <button class="btn-primary" onclick="handleLogin('staff')">Access Portal</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP (Hidden until login) -->
+    <div id="mainApp" class="hidden">
+        
+        <div style="text-align: right; max-width: 600px; margin: 0 auto 10px;">
+            <span style="font-size: 14px; margin-right: 15px;" id="welcomeText"></span>
+            <button class="btn-danger btn-small" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Global Date Viewer (Hidden for Staff) -->
+        <div class="global-date-picker" id="datePickerContainer">
+            <label style="font-size: 14px; font-weight: bold;">Viewing Log Date:</label>
+            <input type="date" id="globalViewDate" onchange="changeViewDate()">
+        </div>
+
+        <div class="nav-tabs" id="navTabs">
+            <!-- Management Tabs -->
+            <button id="btnPunch" class="active mgmt-tab" onclick="switchTab('punch')">Dashboard</button>
+            <button id="btnReports" class="mgmt-tab" onclick="switchTab('reports')">Reports</button>
+            <button id="btnSettings" class="mgmt-tab" onclick="switchTab('settings')">Settings</button>
+            
+            <!-- Staff Tabs -->
+            <button id="btnStaffDashboard" class="staff-tab hidden" onclick="switchTab('staffDashboard')">My Status</button>
+            <button id="btnStaffHistory" class="staff-tab hidden" onclick="switchTab('staffHistory')">My History</button>
+            <button id="btnStaffSettings" class="staff-tab hidden" onclick="switchTab('staffSettings')">Settings</button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- MANAGEMENT VIEWS                           -->
+        <!-- ========================================== -->
+
+        <!-- 1. PUNCH STATION (Dashboard) -->
+        <div id="punchTab" class="glass-panel">
+            <div class="clock-display" id="clockDisplay">00:00:00</div>
+
+            <!-- Live Stat Cards -->
+            <div class="flex-responsive" style="margin-bottom: 20px;">
+                <div style="flex: 1; background: rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 12px; opacity: 0.8;">Present / Half Day</div>
+                    <div id="statPresent" style="font-size: 24px; font-weight: bold; color: #10b981;">0</div>
+                </div>
+                <div style="flex: 1; background: rgba(255, 65, 108, 0.2); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ff416c;" onclick="toggleAbsentList()">
+                    <div style="font-size: 12px; opacity: 0.8;">Absent (Tap to View)</div>
+                    <div id="statAbsent" style="font-size: 24px; font-weight: bold; color: #ff416c;">0</div>
+                </div>
+            </div>
+
+            <!-- Hidden Absent List -->
+            <div id="absentListContainer" class="hidden" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #ff416c;">Currently Absent</h4>
+                <div id="absentNamesList" style="font-size: 14px; line-height: 1.8;">Loading...</div>
+            </div>
+            
+            <!-- WhatsApp share button with Unicode emoji escape -->
+            <button class="btn-whatsapp" id="waShareBtn" style="margin-bottom: 20px;" onclick="shareEODReport()"></button>
+
+            <!-- Manual Punch IN -->
+            <h3 style="margin-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Punch IN (Entry)</h3>
+            <div class="flex-responsive">
+                <select id="punchStaffSelect" style="flex: 2; margin-bottom: 0;">
+                    <option value="" disabled selected>Select Staff</option>
+                </select>
+                <input type="date" id="punchDate" style="flex: 1; margin-bottom: 0;" title="Punch Date">
+                <input type="time" id="punchTime" style="flex: 1; margin-bottom: 0;" title="Punch Time">
+                <button class="btn-primary" style="flex: 1; margin-bottom: 0;" onclick="markAttendance('in')">Punch IN</button>
+            </div>
+            
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <!-- Changed to Mark Absent -->
+                <button class="btn-danger" style="flex: 1; margin-bottom:0;" onclick="markAttendance('absent')">Mark Absent</button>
+            </div>
+
+            <h3 style="margin-top: 30px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Active / Late Punches</h3>
+            <div class="table-container">
+                <table>
+                    <tbody id="activePunchesBody">
+                        <tr><td style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. REPORTS SECTION -->
+        <div id="reportsTab" class="glass-panel hidden">
+            <h2>Attendance Report</h2>
+            
+            <div class="flex-responsive" style="margin-bottom: 20px;">
+                <input type="month" id="reportMonth" style="flex: 1; margin-bottom: 0;">
+                <button class="btn-success" style="flex: 1; margin-bottom: 0;" onclick="exportExcel()">Export HR Excel</button>
+            </div>
+
+            <h3 style="margin-bottom: 10px;">Daily Log (Based on View Date)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IN</th>
+                            <th>OUT</th>
+                            <th>Status</th>
+                            <th id="editColumnHeader" class="hidden">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        <tr><td colspan="5" style="text-align:center;">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. SETTINGS SECTION (Management) -->
+        <div id="settingsTab" class="glass-panel hidden">
+            
+            <!-- ADMIN ONLY: GEO FENCE SETTINGS -->
+            <div id="geoSettingsSection" class="hidden">
+                <h2 style="color: #00c6ff;">Geo-Location Restrictions</h2>
+                <div class="flex-responsive">
+                    <input type="text" id="geoLat" placeholder="Latitude (e.g. 17.4399)">
+                    <input type="text" id="geoLng" placeholder="Longitude (e.g. 78.4983)">
+                    <button class="btn-warning" onclick="getCurrentGeoForAdmin()">📍 Get My Location</button>
+                </div>
+                <div class="flex-responsive">
+                    <input type="number" id="geoRadius" placeholder="Radius (Meters)" value="50">
+                    <select id="geoEnabled">
+                        <option value="false">Geo-Fence Disabled</option>
+                        <option value="true">Geo-Fence Enabled</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="saveGeoSettings()">Save Location Settings</button>
+                <hr style="border: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+            </div>
+
+            <h2>Add New Staff</h2>
+            <form id="addStaffForm">
+                <input type="text" id="staffName" placeholder="Staff Name (e.g., Suman)" required>
+                <input type="text" id="staffRole" placeholder="Designation (e.g., Modular Contractor)" required>
+                
+                <div class="flex-responsive">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; opacity: 0.8;">Shift Start</label>
+                        <input type="time" id="shiftStart" required value="10:00">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; opacity: 0.8;">Shift End</label>
+                        <input type="time" id="shiftEnd" required value="19:00">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; opacity: 0.8;">Login PIN</label>
+                        <input type="text" id="staffPin" required value="1234" maxlength="4" style="margin-bottom: 0;">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;">Save Profile</button>
+            </form>
+
+            <!-- Admin Only: Passwords -->
+            <div id="systemSecuritySection">
+                <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">System Security</h3>
+                <div class="flex-responsive">
+                    <select id="accountToUpdate" style="flex: 1; margin-bottom:0;">
+                        <option value="ankit">Security (Ankit)</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <input type="text" id="newPassword" placeholder="New Password" style="flex: 1; margin-bottom:0;">
+                </div>
+                <button class="btn-warning" style="margin-top: 15px;" onclick="changePassword()">Update Password</button>
+            </div>
+
+            <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Current Staff Profiles</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>PIN</th>
+                            <th>Timing</th>
+                            <th id="editStaffActionHeader" colspan="2" style="text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffListBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- STAFF PORTAL VIEWS                         -->
+        <!-- ========================================== -->
+        
+        <!-- Staff Dashboard -->
+        <div id="staffDashboardTab" class="glass-panel hidden">
+            
+            <!-- Staff Monthly Stats Header -->
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; opacity: 0.9;">Current Month Summary</h4>
+                <div class="flex-responsive" style="text-align: center;">
+                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Total Days<br><strong id="staffTotalDays" style="font-size: 18px; color:#fff;">0</strong></div>
+                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Present Days<br><strong id="staffPresentDays" style="font-size: 18px; color: #10b981;">0</strong></div>
+                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Absent Days<br><strong id="staffAbsentDays" style="font-size: 18px; color: #ff416c;">0</strong></div>
+                </div>
+            </div>
+
+            <h2 style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Today's Shift</h2>
+            
+            <div id="staffActionArea" style="text-align: center; padding: 20px;">
+                <!-- Shows if they haven't punched in yet -->
+                <div id="staffSelfPunchInDiv">
+                    <p style="font-size: 1.2rem; color: #f59e0b; margin-bottom: 20px;">You have not punched in yet today.</p>
+                    <button class="btn-success" id="btnSelfIn" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('in')"></button>
+                </div>
+
+                <!-- Shows while they are punched in -->
+                <div id="staffActiveShift" class="hidden">
+                    <div style="text-align: center; font-size: 14px; opacity: 0.8; margin-top: 10px;">
+                        <span class="pulse-dot" id="pulseDot"></span><span id="shiftTimerLabel">Live Shift Duration</span>
+                    </div>
+                    <div class="live-timer" id="liveStaffHours">00:00:00</div>
+                    
+                    <div class="flex-responsive" style="justify-content: center; margin-bottom: 20px;">
+                        <span id="staffPunchInDisplay" class="status-badge status-ontime" style="font-size: 14px; padding: 8px 15px;">In: --</span>
+                        <span id="staffStatusDisplay" class="status-badge status-absent" style="font-size: 14px; padding: 8px 15px;">Status: --</span>
+                    </div>
+                    
+                    <div id="staffSelfPunchOutDiv">
+                        <button class="btn-danger" id="btnSelfOut" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('out')"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff History -->
+        <div id="staffHistoryTab" class="glass-panel hidden">
+            <h2>My Attendance History</h2>
+            <p style="font-size: 12px; opacity: 0.8; margin-top: -10px;">Showing recent logs...</p>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>IN</th>
+                            <th>OUT</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffHistoryBody">
+                        <tr><td colspan="4" style="text-align:center;">Loading history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Staff Settings Tab -->
+        <div id="staffSettingsTab" class="glass-panel hidden">
+            <h2 style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Account Settings</h2>
+            <h3 style="margin-top: 20px;">Change Login PIN</h3>
+            
+            <input type="password" id="staffCurrentPin" placeholder="Current PIN" maxlength="4">
+            <input type="password" id="staffNewPin" placeholder="New 4-Digit PIN" maxlength="4">
+            <input type="password" id="staffConfirmPin" placeholder="Confirm New PIN" maxlength="4">
+            
+            <button class="btn-warning" onclick="updateStaffPin()">Update PIN</button>
+        </div>
+        
+        <!-- Script for JS-based Unicode text loading to prevent encoding corruption -->
+        <script>
+            document.getElementById('waShareBtn').innerText = "\uD83D\uDCF1 Share EOD Report on WhatsApp";
+            document.getElementById('notificationToast').innerText = "\uD83D\uDD14 Reminder: You are logged in, but haven't punched in yet today!";
+            document.getElementById('btnSelfIn').innerText = "\uD83D\uDFE2 PUNCH IN NOW";
+            document.getElementById('btnSelfOut').innerText = "\uD83D\uDD34 PUNCH OUT";
+        </script>
+
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Admin History Modal -->
+    <div id="historyModal" class="modal hidden">
+        <div class="modal-content history-modal-content">
+            <h3 style="color: #00c6ff;">History: <span id="historyStaffName"></span></h3>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>IN</th>
+                            <th>OUT</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminHistoryBody">
+                        <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn-warning" style="margin-top: 15px;" onclick="closeHistoryModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Edit Daily Entry Modal (Admin Only) -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Entry: <span id="editStaffName"></span></h3>
+            <input type="hidden" id="editStaffId">
+            <label style="font-size: 12px;">Punch IN (HH:MM AM/PM)</label>
+            <input type="text" id="editPunchIn">
+            <label style="font-size: 12px;">Punch OUT (HH:MM AM/PM)</label>
+            <input type="text" id="editPunchOut">
+            <label style="font-size: 12px;">Status</label>
+            <select id="editStatus">
+                <option value="On Time">On Time</option>
+                <option value="Late">Late</option>
+                <option value="Half Day">Half Day</option>
+                <option value="Absent">Absent</option>
+            </select>
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-success" onclick="saveEdit()">Save</button>
+                <button class="btn-warning" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-danger" onclick="deleteDailyEntry()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Staff Profile Modal (Admin Only) -->
+    <div id="editStaffModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Staff Profile</h3>
+            <input type="hidden" id="editStaffProfileId">
+            <label style="font-size: 12px;">Name</label>
+            <input type="text" id="editStaffProfileName" placeholder="Staff Name" required>
+            <label style="font-size: 12px;">Designation</label>
+            <input type="text" id="editStaffProfileRole" placeholder="Designation" required>
+            
+            <div class="flex-responsive">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; opacity: 0.8;">Shift Start</label>
+                    <input type="time" id="editStaffProfileStart" required>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; opacity: 0.8;">Shift End</label>
+                    <input type="time" id="editStaffProfileEnd" required>
+                </div>
+            </div>
+            <label style="font-size: 12px; margin-top: 10px; display: block;">Login PIN</label>
+            <input type="text" id="editStaffProfilePin" required maxlength="4">
+            
+            <div class="flex-responsive" style="margin-top: 15px;">
+                <button class="btn-success" onclick="saveStaffEdit()">Save</button>
+                <button class="btn-warning" onclick="closeEditStaffModal()">Cancel</button>
+                <button class="btn-danger" onclick="deleteStaff()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. FIREBASE INITIALIZATION & GLOBAL VARS
+        // ==========================================
+        const firebaseConfig = {
+            databaseURL: "https://attendance-b6682-default-rtdb.firebaseio.com/"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        let staffData = {}; 
+        let currentUserRole = null; 
+        let loggedInStaffId = null;
+        let currentListenerRef = null;
+        let staffHistoryListener = null;
+        let liveTimerInterval = null;
+        
+        let notificationInterval;
+        let hasPunchedInToday = false;
+        
+        // Geo-Location State Variables
+        let geoConfig = { enabled: false, lat: 0, lng: 0, radius: 50 };
+
+        // Load Geo-Settings into Memory
+        db.ref('settings/geofence').on('value', snap => {
+            if(snap.exists()) {
+                geoConfig = snap.val();
+                if(document.getElementById('geoLat')) {
+                    document.getElementById('geoLat').value = geoConfig.lat;
+                    document.getElementById('geoLng').value = geoConfig.lng;
+                    document.getElementById('geoRadius').value = geoConfig.radius;
+                    document.getElementById('geoEnabled').value = geoConfig.enabled ? "true" : "false";
+                }
+            }
+        });
+
+        // ==========================================
+        // 2. GEO-LOCATION & HAERSINE MATH LOGIC
+        // ==========================================
+        function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+            var R = 6371; // Radius of the earth in km
+            var dLat = deg2rad(lat2-lat1);  
+            var dLon = deg2rad(lon2-lon1); 
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            return Math.round(R * c * 1000); // Distance in meters
+        }
+        function deg2rad(deg) { return deg * (Math.PI/180); }
+
+        function checkGeoLocation(callback) {
+            if (!geoConfig.enabled || geoConfig.enabled === "false") {
+                callback(true);
+                return;
+            }
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser/device.");
+                callback(false);
+                return;
+            }
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const dist = getDistanceFromLatLonInM(pos.coords.latitude, pos.coords.longitude, parseFloat(geoConfig.lat), parseFloat(geoConfig.lng));
+                if (dist <= parseInt(geoConfig.radius)) {
+                    callback(true); 
+                } else {
+                    alert(`\uD83D\uDEAB Geo-Fence Block: You are ${dist} meters away from the showroom.\n(Allowed radius: ${geoConfig.radius}m)`);
+                    callback(false);
+                }
+            }, (err) => {
+                alert("Location access denied. Please enable location services and allow access in your browser to punch in.");
+                callback(false);
+            }, { enableHighAccuracy: true });
+        }
+
+        function getCurrentGeoForAdmin() {
+            if (!navigator.geolocation) return alert("Browser does not support geolocation");
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.getElementById('geoLat').value = pos.coords.latitude.toFixed(6);
+                document.getElementById('geoLng').value = pos.coords.longitude.toFixed(6);
+                alert("Coordinates captured successfully!");
+            });
+        }
+        function saveGeoSettings() {
+            db.ref('settings/geofence').set({
+                lat: document.getElementById('geoLat').value,
+                lng: document.getElementById('geoLng').value,
+                radius: document.getElementById('geoRadius').value,
+                enabled: document.getElementById('geoEnabled').value === "true"
+            }).then(() => alert("Geo-Location Settings Saved Successfully!"));
+        }
+
+        // ==========================================
+        // 3. STAFF NOTIFICATION SYSTEM
+        // ==========================================
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function triggerPunchReminder() {
+            if (currentUserRole === 'staff_user' && !hasPunchedInToday) {
+                const toast = document.getElementById('notificationToast');
+                toast.classList.remove('hidden');
+                setTimeout(() => toast.classList.add('hidden'), 6000);
+                
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("URBAN CASA", { 
+                        body: "Reminder: You are logged in but have not punched in yet!",
+                    });
+                }
+            }
+        }
+
+        // ==========================================
+        // 4. AUTHENTICATION & SESSION PERSISTENCE
+        // ==========================================
+        function initAuth() {
+            db.ref('passwords').once('value', snap => {
+                if(!snap.exists()) db.ref('passwords').set({ admin: 'admin789', ankit: '2026' });
+            });
+            checkSession();
+        }
+        
+        function checkSession() {
+            const savedRole = localStorage.getItem('uc_role');
+            const savedId = localStorage.getItem('uc_staffId');
+            const savedMsg = localStorage.getItem('uc_msg');
+            if (savedRole) { finalizeLogin(savedRole, savedId, savedMsg, false); }
+        }
+
+        function toggleLoginMode(mode) {
+            document.getElementById('btnToggleMgmt').classList.remove('active');
+            document.getElementById('btnToggleStaff').classList.remove('active');
+            
+            if (mode === 'mgmt') {
+                document.getElementById('btnToggleMgmt').classList.add('active');
+                document.getElementById('mgmtLoginBox').classList.remove('hidden');
+                document.getElementById('staffLoginBox').classList.add('hidden');
+            } else {
+                document.getElementById('btnToggleStaff').classList.add('active');
+                document.getElementById('mgmtLoginBox').classList.add('hidden');
+                document.getElementById('staffLoginBox').classList.remove('hidden');
+            }
+        }
+
+        function handleLogin(mode) {
+            if (mode === 'mgmt') {
+                const user = document.getElementById('loginUsername').value.toLowerCase().trim();
+                const pass = document.getElementById('loginPassword').value.trim();
+
+                db.ref('passwords').once('value', snap => {
+                    const passwords = snap.val();
+                    if (passwords && passwords[user] === pass) {
+                        finalizeLogin(user, null, `Logged in as: ${user.toUpperCase()}`);
+                    } else {
+                        alert("Invalid Username or Password!");
+                    }
+                });
+            } else if (mode === 'staff') {
+                const sId = document.getElementById('loginStaffSelect').value;
+                const pin = document.getElementById('loginStaffPin').value.trim();
+                
+                if (!sId) { alert("Please select your profile."); return; }
+                const correctPin = staffData[sId].pin || "1234"; 
+
+                if (pin === correctPin) {
+                    finalizeLogin('staff_user', sId, `Welcome, ${staffData[sId].name}`);
+                } else {
+                    alert("Invalid PIN!");
+                }
+            }
+        }
+
+        function finalizeLogin(role, staffId, welcomeMsg, saveSession = true) {
+            if (saveSession) {
+                localStorage.setItem('uc_role', role);
+                if (staffId) localStorage.setItem('uc_staffId', staffId);
+                localStorage.setItem('uc_msg', welcomeMsg);
+            }
+
+            currentUserRole = role;
+            loggedInStaffId = staffId;
+            
+            document.getElementById('welcomeText').innerText = welcomeMsg;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            const mgmtTabs = document.querySelectorAll('.mgmt-tab');
+            const staffTabs = document.querySelectorAll('.staff-tab');
+            
+            if (role === 'staff_user') {
+                document.getElementById('datePickerContainer').classList.add('hidden');
+                mgmtTabs.forEach(el => el.classList.add('hidden'));
+                staffTabs.forEach(el => el.classList.remove('hidden'));
+                switchTab('staffDashboard');
+                loadStaffPortalData();
+                
+                requestNotificationPermission();
+                clearInterval(notificationInterval);
+                notificationInterval = setInterval(triggerPunchReminder, 2 * 60 * 1000);
+                
+            } else {
+                document.getElementById('datePickerContainer').classList.remove('hidden');
+                staffTabs.forEach(el => el.classList.add('hidden'));
+                mgmtTabs.forEach(el => el.classList.remove('hidden'));
+                
+                if(role === 'ankit') {
+                    document.getElementById('btnReports').classList.add('hidden');
+                    document.getElementById('systemSecuritySection').classList.add('hidden');
+                    document.getElementById('geoSettingsSection').classList.add('hidden');
+                } else if (role === 'admin') {
+                    document.getElementById('systemSecuritySection').classList.remove('hidden');
+                    document.getElementById('geoSettingsSection').classList.remove('hidden');
+                    document.getElementById('editColumnHeader').classList.remove('hidden');
+                }
+                
+                document.getElementById('globalViewDate').value = getTodayDateString();
+                document.getElementById('punchDate').value = getTodayDateString(); // Sync initially
+                document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
+                
+                renderStaffTable(); 
+                switchTab('punch');
+                changeViewDate();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('uc_role');
+            localStorage.removeItem('uc_staffId');
+            localStorage.removeItem('uc_msg');
+
+            currentUserRole = null;
+            loggedInStaffId = null;
+            hasPunchedInToday = false;
+            
+            clearInterval(liveTimerInterval);
+            clearInterval(notificationInterval);
+            
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginStaffPin').value = '';
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            
+            if(currentListenerRef) currentListenerRef.off();
+            if(staffHistoryListener) staffHistoryListener.off();
+            
+            const allPanels = document.querySelectorAll('.glass-panel');
+            allPanels.forEach(p => { if(p.id !== 'loginScreen') p.classList.add('hidden'); });
+        }
+
+        function changePassword() {
+            const account = document.getElementById('accountToUpdate').value;
+            const newPass = document.getElementById('newPassword').value.trim();
+            if(newPass.length < 4) { alert("Password too short!"); return; }
+            db.ref(`passwords/${account}`).set(newPass).then(() => {
+                alert(`${account.toUpperCase()} password updated successfully!`);
+                document.getElementById('newPassword').value = '';
+            });
+        }
+
+        // ==========================================
+        // 5. UI, CLOCK & EOD REPORT LOGIC
+        // ==========================================
+        function switchTab(tab) {
+            document.getElementById('punchTab').classList.add('hidden');
+            document.getElementById('reportsTab').classList.add('hidden');
+            document.getElementById('settingsTab').classList.add('hidden');
+            document.getElementById('staffDashboardTab').classList.add('hidden');
+            document.getElementById('staffHistoryTab').classList.add('hidden');
+            document.getElementById('staffSettingsTab').classList.add('hidden');
+            
+            document.querySelectorAll('#navTabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.remove('hidden');
+            
+            let btnId = 'btn' + tab.charAt(0).toUpperCase() + tab.slice(1);
+            if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
+        }
+
+        function toggleAbsentList() {
+            document.getElementById('absentListContainer').classList.toggle('hidden');
+        }
+
+        setInterval(() => {
+            document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString('en-IN');
+        }, 1000);
+
+        function getTodayDateString() {
+            const date = new Date();
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function format12H(time24) {
+            if(!time24) return null;
+            const [h, m] = time24.split(':');
+            const d = new Date(); d.setHours(h, m, 0);
+            return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+        
+        function getTimestamp(dStr, time24) {
+            if(!time24) return null;
+            return new Date(`${dStr}T${time24}:00`).getTime();
+        }
+
+        function shareEODReport() {
+            const dateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            
+            db.ref(`attendance/${dateStr}`).once('value').then(snap => {
+                const logs = snap.val() || {};
+                let totalPresent = 0, totalAbsent = 0;
+                let staffStatusList = [];
+
+                for (const staffId in staffData) {
+                    const staff = staffData[staffId];
+                    const log = logs[staffId];
+                    
+                    if (!log) {
+                        totalAbsent++;
+                        staffStatusList.push(`\uD83D\uDD34 *${staff.name}* - Absent`);
+                    } else {
+                        let emoji = "\u26AA";
+                        let statusText = log.status || "Unknown";
+                        let timeText = log.punchIn ? ` (In: ${log.punchIn})` : "";
+                        
+                        if (statusText === 'On Time') { emoji = "\uD83D\uDFE2"; totalPresent++; } 
+                        else if (statusText === 'Late') { emoji = "\uD83D\uDFE0"; totalPresent++; } 
+                        else if (statusText === 'Half Day') { emoji = "\uD83D\uDFE3"; totalPresent++; } 
+                        // Support legacy 'Week Off' data and merge them to 'Absent'
+                        else if (statusText === 'Week Off' || statusText === 'Absent') { 
+                            emoji = "\uD83D\uDD34"; 
+                            statusText = "Absent"; 
+                            totalAbsent++; 
+                            timeText = ""; 
+                        } 
+
+                        staffStatusList.push(`${emoji} *${log.name}* - ${statusText}${timeText}`);
+                    }
+                }
+
+                let text = `*URBAN CASA - Daily Attendance Report*\n*Date:* ${dateStr}\n\n`;
+                text += `*Team Status:*\n${staffStatusList.join('\n')}\n\n`;
+                text += `*Summary:*\nPresent (inc. Late/Half Day): ${totalPresent}\nAbsent: ${totalAbsent}\n\n`;
+                text += `_Legend: \uD83D\uDFE2 On Time | \uD83D\uDFE0 Late | \uD83D\uDFE3 Half Day | \uD83D\uDD34 Absent_`;
+
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+            });
+        }
+
+        function changeViewDate() {
+            const viewDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            
+            // Sync Manual Punch Date automatically to prevent errors
+            document.getElementById('punchDate').value = viewDateStr;
+
+            if(currentListenerRef) currentListenerRef.off();
+            currentListenerRef = db.ref(`attendance/${viewDateStr}`);
+            
+            currentListenerRef.on('value', (snapshot) => {
+                const logs = snapshot.val() || {};
+                const reportTableBody = document.getElementById('reportTableBody');
+                const activePunchesBody = document.getElementById('activePunchesBody');
+                
+                let reportHTML = "", activeHTML = "", absentHTML = "";
+                let presentCount = 0, absentCount = 0;
+
+                for(const staffId in staffData) {
+                    const staff = staffData[staffId];
+                    // Legacy Week Off mapped to absent view
+                    if(!logs[staffId] || logs[staffId].status === 'Absent' || logs[staffId].status === 'Week Off') {
+                        absentCount++;
+                        let displayStatus = logs[staffId] ? (logs[staffId].status === 'Week Off' ? 'Absent' : logs[staffId].status) : "Absent";
+                        absentHTML += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 5px 0;"><span>${staff.name}</span><span style="font-size:11px; opacity:0.8;">${displayStatus}</span></div>`;
+                    }
+                }
+
+                document.getElementById('statAbsent').innerText = absentCount;
+                document.getElementById('absentNamesList').innerHTML = absentHTML || "<div>Everyone is present!</div>";
+
+                if (Object.keys(logs).length === 0) {
+                    reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No punches found.</td></tr>';
+                    activePunchesBody.innerHTML = '<tr><td style="text-align:center;">No active staff.</td></tr>';
+                    document.getElementById('statPresent').innerText = "0";
+                    return;
+                }
+
+                for (const staffId in logs) {
+                    const log = logs[staffId];
+                    if (!log || !log.name) continue;
+
+                    if(log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
+
+                    let statusClass = 'status-ontime';
+                    if(log.status === 'Late') statusClass = 'status-late';
+                    if(log.status === 'Week Off' || log.status === 'Absent') statusClass = 'status-absent';
+                    if(log.status === 'Half Day') statusClass = 'status-halfday';
+                    
+                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status || 'N/A');
+
+                    const pIn = log.punchIn || '--';
+                    const pOut = log.punchOut ? log.punchOut : '--';
+                    let adminAction = currentUserRole === 'admin' ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${pIn}', '${pOut}', '${log.status}')">Edit</button></td>` : '';
+
+                    reportHTML += `<tr><td><strong>${log.name}</strong></td><td>${pIn}</td><td>${pOut}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td>${adminAction}</tr>`;
+
+                    if(log.punchIn && !log.punchOut && log.status !== 'Week Off' && log.status !== 'Absent') {
+                        let lateWarning = log.status === 'Late' ? '<span style="color: #f59e0b; font-size: 11px; margin-left: 5px;">(LATE)</span>' : '';
+                        activeHTML += `
+                        <tr>
+                            <td style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                                <div><strong>${log.name}</strong> ${lateWarning}<br><span style="font-size: 11px; opacity: 0.8;">In: ${pIn}</span></div>
+                                <button class="btn-danger btn-small" onclick="markAttendance('out', '${staffId}', '${viewDateStr}')">Punch OUT</button>
+                            </td>
+                        </tr>`;
+                    }
+                }
+                
+                document.getElementById('statPresent').innerText = presentCount;
+                reportTableBody.innerHTML = reportHTML;
+                activePunchesBody.innerHTML = activeHTML || '<tr><td style="text-align:center;">No active staff.</td></tr>';
+            });
+        }
+
+        // ==========================================
+        // 6. DATABASE STAFF & PUNCH LOGIC
+        // ==========================================
+        db.ref('staff').on('value', (snapshot) => {
+            staffData = snapshot.val() || {};
+            renderStaffTable(); 
+            if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
+                changeViewDate();
+            }
+        });
+
+        function renderStaffTable() {
+            const staffListBody = document.getElementById('staffListBody');
+            const punchStaffSelect = document.getElementById('punchStaffSelect');
+            const loginStaffSelect = document.getElementById('loginStaffSelect');
+            
+            let tableHTML = "";
+            let selectHTML = '<option value="" disabled selected>Select Staff Profile</option>';
+
+            for (const key in staffData) {
+                const staff = staffData[key];
+                if (!staff || !staff.name) continue; 
+                
+                let actionCols = "";
+                // Both admin and ankit can see History
+                if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
+                    let historyBtn = `<button class="btn-primary btn-small" onclick="viewStaffHistory('${key}', '${staff.name}')">History</button>`;
+                    let editBtn = (currentUserRole === 'admin') 
+                        ? `<button class="btn-warning btn-small" style="margin-left:5px;" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button>` 
+                        : '';
+                    actionCols = `<td>${historyBtn}${editBtn}</td>`;
+                }
+
+                tableHTML += `<tr><td>${staff.name}</td><td>${staff.pin || '1234'}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td>${actionCols}</tr>`;
+                selectHTML += `<option value="${key}">${staff.name}</option>`;
+            }
+            
+            if(staffListBody) staffListBody.innerHTML = tableHTML;
+            if(punchStaffSelect) punchStaffSelect.innerHTML = selectHTML;
+            if(loginStaffSelect) loginStaffSelect.innerHTML = selectHTML;
+        }
+
+        document.getElementById('addStaffForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            db.ref('staff').push({
+                name: document.getElementById('staffName').value,
+                role: document.getElementById('staffRole').value,
+                shiftStart: document.getElementById('shiftStart').value,
+                shiftEnd: document.getElementById('shiftEnd').value,
+                pin: document.getElementById('staffPin').value
+            }).then(() => {
+                alert("Staff added successfully!");
+                this.reset();
+                document.getElementById('staffPin').value = "1234";
+            });
+        });
+
+        // Admin manual punch (no geo check required)
+        function markAttendance(type, directStaffId = null, forceDateStr = null) {
+            const staffId = directStaffId || document.getElementById('punchStaffSelect').value;
+            if (!staffId) { alert("Please select staff profile first!"); return; }
+
+            const staff = staffData[staffId];
+            const now = new Date();
+            const liveDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const liveTime24 = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            if (type === 'absent') {
+                const targetDateStr = forceDateStr || document.getElementById('punchDate').value || liveDateStr;
+                db.ref(`attendance/${targetDateStr}/${staffId}`).update({ name: staff.name, status: 'Absent' }).then(() => {
+                    alert(`${staff.name} marked as Absent.`);
+                    document.getElementById('punchStaffSelect').value = "";
+                });
+                return;
+            }
+
+            if (type === 'in') {
+                const manualDate = document.getElementById('punchDate').value || liveDateStr;
+                const manualTime = document.getElementById('punchTime').value || liveTime24;
+                const timeString = format12H(manualTime);
+                const punchInTs = getTimestamp(manualDate, manualTime);
+
+                const shiftTime = new Date(`${manualDate}T${staff.shiftStart}:00`);
+                shiftTime.setMinutes(shiftTime.getMinutes() + 15); 
+                const status = new Date(`${manualDate}T${manualTime}:00`) > shiftTime ? 'Late' : 'On Time';
+
+                db.ref(`attendance/${manualDate}/${staffId}`).once('value').then(snap => {
+                    // FIX: Allow Overwrite instead of strictly blocking previous entries
+                    if(snap.exists() && snap.val().punchIn) { 
+                        if(!confirm(`Staff already has a punch IN (${snap.val().punchIn}) for ${manualDate}.\nDo you want to overwrite it?`)) {
+                            return; 
+                        }
+                    }
+                    db.ref(`attendance/${manualDate}/${staffId}`).update({
+                        name: staff.name, punchIn: timeString, punchInTs: punchInTs, status: status
+                    }).then(() => {
+                        document.getElementById('punchStaffSelect').value = "";
+                        document.getElementById('punchTime').value = ""; 
+                        alert("Punched IN successfully!");
+                    });
+                });
+            } else if (type === 'out') {
+                const targetDateStr = forceDateStr || liveDateStr;
+                let outTime24 = prompt(`Enter Punch OUT time for ${staff.name}\n(24-hour format, e.g., 18:30):`, liveTime24);
+                if (!outTime24) return;
+
+                const timeString = format12H(outTime24);
+                const punchOutTs = getTimestamp(targetDateStr, outTime24);
+
+                db.ref(`attendance/${targetDateStr}/${staffId}`).once('value').then(snap => {
+                    const data = snap.val();
+                    if(!data || !data.punchInTs) { alert("Error: Cannot Punch OUT before Punching IN!"); return; }
+
+                    const workedMins = (punchOutTs - data.punchInTs) / (1000 * 60);
+                    const [sH, sM] = staff.shiftStart.split(':').map(Number);
+                    const [eH, eM] = staff.shiftEnd.split(':').map(Number);
+                    const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
+
+                    let finalStatus = data.status; 
+                    if (workedMins < (shiftMinsRequired * 0.5)) finalStatus = 'Half Day';
+                    let otMins = Math.max(0, workedMins - shiftMinsRequired);
+                    const otHours = (otMins / 60).toFixed(2);
+
+                    db.ref(`attendance/${targetDateStr}/${staffId}`).update({
+                        punchOut: timeString, punchOutTs: punchOutTs, otHours: parseFloat(otHours), status: finalStatus
+                    });
+                });
+            }
+        }
+
+        // ==========================================
+        // 7. STAFF PORTAL LOGIC & SELF-PUNCH (Geo)
+        // ==========================================
+        function updateStaffPin() {
+            const currentPin = document.getElementById('staffCurrentPin').value;
+            const newPin = document.getElementById('staffNewPin').value;
+            const confirmPin = document.getElementById('staffConfirmPin').value;
+
+            if (!loggedInStaffId || !staffData[loggedInStaffId]) return;
+
+            const actualPin = staffData[loggedInStaffId].pin || "1234";
+
+            if (currentPin !== actualPin) {
+                alert("Current PIN is incorrect!"); return;
+            }
+            if (newPin.length !== 4 || isNaN(newPin)) {
+                alert("New PIN must be exactly 4 digits!"); return;
+            }
+            if (newPin !== confirmPin) {
+                alert("New PINs do not match!"); return;
+            }
+
+            db.ref(`staff/${loggedInStaffId}`).update({ pin: newPin }).then(() => {
+                alert("Your Login PIN has been updated successfully!");
+                document.getElementById('staffCurrentPin').value = '';
+                document.getElementById('staffNewPin').value = '';
+                document.getElementById('staffConfirmPin').value = '';
+            });
+        }
+        
+        function staffSelfPunch(type) {
+            if (!loggedInStaffId) return;
+            
+            // Set Loading UI State
+            const btn = type === 'in' ? document.getElementById('btnSelfIn') : document.getElementById('btnSelfOut');
+            const originalText = btn.innerText;
+            btn.innerText = "\u23F3 Verifying Location...";
+            btn.disabled = true;
+
+            // Enforce Geo-Location before saving to Firebase
+            checkGeoLocation((allowed) => {
+                btn.innerText = originalText; // restore UI
+                btn.disabled = false;
+                if(!allowed) return;
+
+                const staff = staffData[loggedInStaffId];
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const time24 = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const timeString = format12H(time24);
+                const ts = now.getTime();
+
+                if (type === 'in') {
+                    const shiftTime = new Date(`${dateStr}T${staff.shiftStart}:00`);
+                    shiftTime.setMinutes(shiftTime.getMinutes() + 15); 
+                    const status = now > shiftTime ? 'Late' : 'On Time';
+
+                    db.ref(`attendance/${dateStr}/${loggedInStaffId}`).once('value').then(snap => {
+                        if(snap.exists() && snap.val().punchIn) { alert("You are already punched in!"); return; }
+                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({
+                            name: staff.name, punchIn: timeString, punchInTs: ts, status: status
+                        }).then(() => alert("Punched IN successfully!"));
+                    });
+                } else if (type === 'out') {
+                    if(!confirm("Are you sure you want to punch out for the day?")) return;
+                    
+                    db.ref(`attendance/${dateStr}/${loggedInStaffId}`).once('value').then(snap => {
+                        const data = snap.val();
+                        if(!data || !data.punchInTs) return;
+
+                        const workedMins = (ts - data.punchInTs) / (1000 * 60);
+                        const [sH, sM] = staff.shiftStart.split(':').map(Number);
+                        const [eH, eM] = staff.shiftEnd.split(':').map(Number);
+                        const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
+
+                        let finalStatus = data.status; 
+                        if (workedMins < (shiftMinsRequired * 0.5)) finalStatus = 'Half Day';
+                        let otMins = Math.max(0, workedMins - shiftMinsRequired);
+                        const otHours = (otMins / 60).toFixed(2);
+
+                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({
+                            punchOut: timeString, punchOutTs: ts, otHours: parseFloat(otHours), status: finalStatus
+                        }).then(() => alert("Punched OUT successfully!"));
+                    });
+                }
+            });
+        }
+
+        function loadStaffPortalData() {
+            const todayStr = getTodayDateString();
+            if(currentListenerRef) currentListenerRef.off();
+            currentListenerRef = db.ref(`attendance/${todayStr}/${loggedInStaffId}`);
+            
+            // 1. Live Today Card Listener
+            currentListenerRef.on('value', (snap) => {
+                const log = snap.val();
+                
+                if (log && log.punchIn) {
+                    hasPunchedInToday = true;
+                    document.getElementById('staffSelfPunchInDiv').classList.add('hidden');
+                    document.getElementById('staffActiveShift').classList.remove('hidden');
+                    
+                    document.getElementById('staffPunchInDisplay').innerText = `Punched In: ${log.punchIn}`;
+                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : log.status;
+                    document.getElementById('staffStatusDisplay').innerText = `Status: ${displayStatus}`;
+                    
+                    clearInterval(liveTimerInterval);
+                    if (!log.punchOut) {
+                        document.getElementById('staffSelfPunchOutDiv').classList.remove('hidden');
+                        document.getElementById('pulseDot').style.display = 'inline-block';
+                        document.getElementById('shiftTimerLabel').innerText = ' Live Shift Duration';
+
+                        liveTimerInterval = setInterval(() => {
+                            let diff = Date.now() - log.punchInTs;
+                            let hrs = Math.floor(diff / (1000 * 60 * 60));
+                            let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                            let secs = Math.floor((diff % (1000 * 60)) / 1000);
+                            document.getElementById('liveStaffHours').innerText = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                        }, 1000);
+                    } else {
+                        document.getElementById('staffSelfPunchOutDiv').classList.add('hidden');
+                        document.getElementById('pulseDot').style.display = 'none';
+                        document.getElementById('shiftTimerLabel').innerText = ' Shift Completed';
+                        let diff = log.punchOutTs - log.punchInTs;
+                        let hrs = Math.floor(diff / (1000 * 60 * 60));
+                        let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        document.getElementById('liveStaffHours').innerText = `${String(hrs).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`;
+                        document.getElementById('liveStaffHours').style.color = "#3b82f6";
+                    }
+                } else {
+                    hasPunchedInToday = false;
+                    document.getElementById('staffSelfPunchInDiv').classList.remove('hidden');
+                    document.getElementById('staffActiveShift').classList.add('hidden');
+                }
+            });
+
+            // 2. Monthly Stats & History Listener
+            if(staffHistoryListener) staffHistoryListener.off();
+            staffHistoryListener = db.ref('attendance');
+            
+            staffHistoryListener.on('value', snap => {
+                const allData = snap.val() || {};
+                const now = new Date();
+                const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                
+                let p = 0, h = 0, a = 0;
+                let totalPassedDays = now.getDate(); 
+
+                for (let i = 1; i <= totalPassedDays; i++) {
+                    let dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
+                    let rec = allData[dStr] ? allData[dStr][loggedInStaffId] : null;
+                    
+                    if (rec) {
+                        if (rec.status === 'On Time' || rec.status === 'Late') p++;
+                        else if (rec.status === 'Half Day') h++;
+                        else if (rec.status === 'Week Off' || rec.status === 'Absent') a++;
+                    } else {
+                        a++;
+                    }
+                }
+                
+                // Update Monthly Dashboard Summaries
+                let effectivePresent = p + (h * 0.5);
+                document.getElementById('staffTotalDays').innerText = totalPassedDays;
+                document.getElementById('staffPresentDays').innerText = effectivePresent;
+                document.getElementById('staffAbsentDays').innerText = a;
+
+                // Update Table Data
+                let historyHTML = "";
+                const dates = Object.keys(allData).sort((x, y) => new Date(y) - new Date(x));
+                let count = 0;
+                for (let dateKey of dates) {
+                    if(count >= 30) break; 
+                    const dayLogs = allData[dateKey];
+                    if(dayLogs && dayLogs[loggedInStaffId]) {
+                        const rec = dayLogs[loggedInStaffId];
+                        let statusClass = 'status-ontime';
+                        if(rec.status === 'Late') statusClass = 'status-late';
+                        if(rec.status === 'Week Off' || rec.status === 'Absent') statusClass = 'status-absent';
+                        if(rec.status === 'Half Day') statusClass = 'status-halfday';
+                        
+                        let displayStatus = (rec.status === 'Week Off') ? 'Absent' : (rec.status || 'N/A');
+
+                        historyHTML += `<tr><td>${dateKey}</td><td>${rec.punchIn || '--'}</td><td>${rec.punchOut || '--'}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td></tr>`;
+                        count++;
+                    }
+                }
+                if (historyHTML === "") historyHTML = "<tr><td colspan='4' style='text-align:center;'>No history found.</td></tr>";
+                document.getElementById('staffHistoryBody').innerHTML = historyHTML;
+            });
+        }
+
+        // ==========================================
+        // 8. MODAL EDITING LOGIC (Admin Only)
+        // ==========================================
+        function openEditModal(id, name, pIn, pOut, status) {
+            document.getElementById('editStaffId').value = id;
+            document.getElementById('editStaffName').innerText = name;
+            document.getElementById('editPunchIn').value = pIn === '--' ? '' : pIn;
+            document.getElementById('editPunchOut').value = pOut === '--' ? '' : pOut;
+            document.getElementById('editStatus').value = (status === 'Week Off') ? 'Absent' : status;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+        
+        function saveEdit() {
+            const id = document.getElementById('editStaffId').value;
+            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            db.ref(`attendance/${targetDateStr}/${id}`).update({
+                punchIn: document.getElementById('editPunchIn').value,
+                punchOut: document.getElementById('editPunchOut').value,
+                status: document.getElementById('editStatus').value
+            }).then(() => closeEditModal());
+        }
+
+        function deleteDailyEntry() {
+            if (currentUserRole !== 'admin') { alert("Unauthorized"); return; }
+            const id = document.getElementById('editStaffId').value;
+            const name = document.getElementById('editStaffName').innerText;
+            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            if (confirm(`Permanently delete the attendance record for ${name} on ${targetDateStr}?`)) {
+                db.ref(`attendance/${targetDateStr}/${id}`).remove().then(() => closeEditModal());
+            }
+        }
+
+        function openEditStaffModal(id, name, role, start, end, pin) {
+            document.getElementById('editStaffProfileId').value = id;
+            document.getElementById('editStaffProfileName').value = name;
+            document.getElementById('editStaffProfileRole').value = role;
+            document.getElementById('editStaffProfileStart').value = start;
+            document.getElementById('editStaffProfileEnd').value = end;
+            document.getElementById('editStaffProfilePin').value = pin;
+            document.getElementById('editStaffModal').classList.remove('hidden');
+        }
+        function closeEditStaffModal() { document.getElementById('editStaffModal').classList.add('hidden'); }
+        
+        function saveStaffEdit() {
+            const id = document.getElementById('editStaffProfileId').value;
+            const name = document.getElementById('editStaffProfileName').value;
+            const role = document.getElementById('editStaffProfileRole').value;
+            const start = document.getElementById('editStaffProfileStart').value;
+            const end = document.getElementById('editStaffProfileEnd').value;
+            const pin = document.getElementById('editStaffProfilePin').value;
+
+            if(!name || !role || !start || !end || !pin) { alert("All fields required!"); return; }
+
+            db.ref(`staff/${id}`).update({ name, role, shiftStart: start, shiftEnd: end, pin }).then(() => {
+                alert("Profile updated!"); closeEditStaffModal();
+            });
+        }
+        function deleteStaff() {
+            const id = document.getElementById('editStaffProfileId').value;
+            if (confirm(`Permanently delete this profile?`)) {
+                db.ref(`staff/${id}`).remove().then(() => closeEditStaffModal());
+            }
+        }
+
+        // ==========================================
+        // 9. NEW: ADMIN HISTORY VIEWER
+        // ==========================================
+        function viewStaffHistory(staffId, staffName) {
+            document.getElementById('historyStaffName').innerText = staffName;
+            document.getElementById('adminHistoryBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+            document.getElementById('historyModal').classList.remove('hidden');
+
+            db.ref('attendance').once('value').then(snap => {
+                const allData = snap.val() || {};
+                let html = "";
+                // Sort dates Descending
+                const dates = Object.keys(allData).sort((a, b) => new Date(b) - new Date(a)); 
+                
+                for(let dStr of dates) {
+                    if(allData[dStr][staffId]) {
+                        let rec = allData[dStr][staffId];
+                        let statusClass = 'status-ontime';
+                        if(rec.status === 'Late') statusClass = 'status-late';
+                        if(rec.status === 'Absent' || rec.status === 'Week Off') statusClass = 'status-absent';
+                        if(rec.status === 'Half Day') statusClass = 'status-halfday';
+                        
+                        let dispStatus = (rec.status === 'Week Off') ? 'Absent' : rec.status;
+                        
+                        html += `<tr><td>${dStr}</td><td>${rec.punchIn || '--'}</td><td>${rec.punchOut || '--'}</td><td><span class="status-badge ${statusClass}">${dispStatus || 'N/A'}</span></td></tr>`;
+                    }
+                }
+                if(!html) html = "<tr><td colspan='4' style='text-align:center;'>No attendance history found.</td></tr>";
+                document.getElementById('adminHistoryBody').innerHTML = html;
+            });
+        }
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 10. HR EXCEL EXPORT LOGIC (Fixed Logic)
+        // ==========================================
+        function exportExcel() {
+            const monthStr = document.getElementById('reportMonth').value; 
+            if(!monthStr) { alert("Please select a month"); return; }
+            const [year, month] = monthStr.split('-');
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            db.ref('attendance').once('value').then(snap => {
+                const allData = snap.val() || {};
+                const stats = {};
+                for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, halfday: 0, absent: 0, ot: 0 };
+
+                for(let dateKey in allData) {
+                    if(dateKey.startsWith(monthStr)) {
+                        for(let sId in allData[dateKey]) {
+                            if(stats[sId]) {
+                                const record = allData[dateKey][sId];
+                                
+                                if(record.status === 'On Time' || record.status === 'Late') {
+                                    stats[sId].present++;
+                                }
+                                else if(record.status === 'Half Day') {
+                                    stats[sId].halfday++;
+                                }
+                                else if(record.status === 'Week Off' || record.status === 'Absent') {
+                                    stats[sId].absent++;
+                                }
+                                
+                                if(record.otHours) stats[sId].ot += record.otHours;
+                            }
+                        }
+                    }
+                }
+
+                // Add Month Column to CSV
+                let csv = "S.No,Staff Name,Report Month,Total Month Days,Present Days (inc. Half Days),Absent Days,OT Hrs (Net),Extra Days\n";
+                let index = 1;
+                for(let sId in stats) {
+                    const st = stats[sId];
+                    // 1 Half Day = 0.5 Present Days
+                    let effectivePresent = st.present + (st.halfday * 0.5);
+                    let extraDays = effectivePresent > 26 ? (effectivePresent - 26) : 0;
+                    
+                    csv += `${index},${st.name},${monthStr},${daysInMonth},${effectivePresent},${st.absent},${st.ot.toFixed(2)},${extraDays}\n`;
+                    index++;
+                }
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            });
+        }
+        
+        // Execute Session check on script load
+        window.onload = initAuth;
+    </script>
+</body>
+</html>

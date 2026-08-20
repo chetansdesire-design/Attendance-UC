@@ -80,8 +80,8 @@
         .flex-responsive { display: flex; gap: 10px; align-items: center; width: 100%; }
 
         /* Tab Navigation */
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
-        .nav-tabs button { margin-bottom: 0; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; flex-wrap: wrap; justify-content: center; }
+        .nav-tabs button { margin-bottom: 0; flex: 1; min-width: 100px; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
         .nav-tabs button.active { background: linear-gradient(to right, #ff7e5f, #feb47b); font-weight: bold; border: none; }
 
         /* Tables */
@@ -118,14 +118,14 @@
         .modal-content { background: #2a5298; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; border: 1px solid rgba(255,255,255,0.2); max-height: 90vh; overflow-y: auto; }
 
         /* Toast Notification */
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff416c; color: white; padding: 15px 25px; border-radius: 30px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: opacity 0.5s ease; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff416c; color: white; padding: 15px 25px; border-radius: 30px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: opacity 0.5s ease; text-align: center; width: 80%; max-width: 400px; }
 
         /* Mobile Responsiveness */
         @media (max-width: 600px) {
             .flex-responsive { flex-direction: column; align-items: stretch; gap: 5px; }
             .flex-responsive > * { width: 100% !important; margin-bottom: 10px; }
-            .nav-tabs { flex-direction: column; gap: 5px; }
-            .nav-tabs button { width: 100%; }
+            .nav-tabs { gap: 5px; }
+            .nav-tabs button { width: 48%; flex: auto; }
             .clock-display { font-size: 1.8rem; }
             .glass-panel { padding: 15px; }
             th, td { font-size: 12px; padding: 8px 4px; }
@@ -135,9 +135,7 @@
 <body>
 
     <!-- Notification Toast -->
-    <div id="notificationToast" class="toast hidden">
-        Reminder: You haven't punched in yet today!
-    </div>
+    <div id="notificationToast" class="toast hidden"></div>
 
     <h1 class="header-title">URBAN CASA<br><span class="tagline">Premium Modular Kitchens & Wardrobes</span></h1>
 
@@ -190,6 +188,7 @@
             <!-- Staff Tabs -->
             <button id="btnStaffDashboard" class="staff-tab hidden" onclick="switchTab('staffDashboard')">My Status</button>
             <button id="btnStaffHistory" class="staff-tab hidden" onclick="switchTab('staffHistory')">My History</button>
+            <button id="btnStaffSettings" class="staff-tab hidden" onclick="switchTab('staffSettings')">Settings</button>
         </div>
 
         <!-- ========================================== -->
@@ -220,10 +219,6 @@
             
             <!-- WhatsApp share button with Unicode emoji escape -->
             <button class="btn-whatsapp" id="waShareBtn" style="margin-bottom: 20px;" onclick="shareEODReport()"></button>
-            <script>
-                document.getElementById('waShareBtn').innerText = "\uD83D\uDCF1 Share EOD Report on WhatsApp";
-                document.getElementById('notificationToast').innerText = "\uD83D\uDD14 Reminder: You haven't punched in yet today!";
-            </script>
 
             <!-- Manual Punch IN -->
             <h3 style="margin-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Punch IN (Entry)</h3>
@@ -278,10 +273,9 @@
             </div>
         </div>
 
-        <!-- 3. SETTINGS SECTION -->
+        <!-- 3. SETTINGS SECTION (Management) -->
         <div id="settingsTab" class="glass-panel hidden">
             
-            <!-- Add Staff is visible to Security and Admin -->
             <h2>Add New Staff</h2>
             <form id="addStaffForm">
                 <input type="text" id="staffName" placeholder="Staff Name (e.g., Suman)" required>
@@ -345,7 +339,7 @@
                 <!-- Shows if they haven't punched in yet -->
                 <div id="staffSelfPunchInDiv">
                     <p style="font-size: 1.2rem; color: #f59e0b; margin-bottom: 20px;">You have not punched in yet today.</p>
-                    <button class="btn-success" id="btnSelfIn" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('in')">PUNCH IN NOW</button>
+                    <button class="btn-success" id="btnSelfIn" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('in')"></button>
                 </div>
 
                 <!-- Shows while they are punched in -->
@@ -361,16 +355,10 @@
                     </div>
                     
                     <div id="staffSelfPunchOutDiv">
-                        <button class="btn-danger" id="btnSelfOut" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('out')">PUNCH OUT</button>
+                        <button class="btn-danger" id="btnSelfOut" style="font-size: 1.2rem; padding: 15px; width: 100%; max-width: 300px;" onclick="staffSelfPunch('out')"></button>
                     </div>
                 </div>
             </div>
-            
-            <!-- Script for JS-based Unicode rendering -->
-            <script>
-                document.getElementById('btnSelfIn').innerText = "\uD83D\uDFE2 PUNCH IN NOW";
-                document.getElementById('btnSelfOut').innerText = "\uD83D\uDD34 PUNCH OUT";
-            </script>
         </div>
 
         <!-- Staff History -->
@@ -393,6 +381,26 @@
                 </table>
             </div>
         </div>
+
+        <!-- Staff Settings Tab -->
+        <div id="staffSettingsTab" class="glass-panel hidden">
+            <h2 style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">Account Settings</h2>
+            <h3 style="margin-top: 20px;">Change Login PIN</h3>
+            
+            <input type="password" id="staffCurrentPin" placeholder="Current PIN" maxlength="4">
+            <input type="password" id="staffNewPin" placeholder="New 4-Digit PIN" maxlength="4">
+            <input type="password" id="staffConfirmPin" placeholder="Confirm New PIN" maxlength="4">
+            
+            <button class="btn-warning" onclick="updateStaffPin()">Update PIN</button>
+        </div>
+        
+        <!-- Script for JS-based Unicode text loading to prevent encoding corruption -->
+        <script>
+            document.getElementById('waShareBtn').innerText = "\uD83D\uDCF1 Share EOD Report on WhatsApp";
+            document.getElementById('notificationToast').innerText = "\uD83D\uDD14 Reminder: You are logged in, but haven't punched in yet today!";
+            document.getElementById('btnSelfIn').innerText = "\uD83D\uDFE2 PUNCH IN NOW";
+            document.getElementById('btnSelfOut').innerText = "\uD83D\uDD34 PUNCH OUT";
+        </script>
 
     </div>
 
@@ -469,7 +477,6 @@
         let currentListenerRef = null;
         let liveTimerInterval = null;
         
-        // Notification Trackers
         let notificationInterval;
         let hasPunchedInToday = false;
 
@@ -484,29 +491,38 @@
 
         function triggerPunchReminder() {
             if (currentUserRole === 'staff_user' && !hasPunchedInToday) {
-                // Show In-App Visual Toast
                 const toast = document.getElementById('notificationToast');
                 toast.classList.remove('hidden');
-                setTimeout(() => toast.classList.add('hidden'), 5000);
+                setTimeout(() => toast.classList.add('hidden'), 6000);
                 
-                // Trigger Native OS Notification if allowed
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("URBAN CASA System", { 
-                        body: "Reminder: You are logged in but have not punched in for your shift yet!",
+                    new Notification("URBAN CASA", { 
+                        body: "Reminder: You are logged in but have not punched in yet!",
                     });
                 }
             }
         }
 
         // ==========================================
-        // 3. AUTHENTICATION LOGIC
+        // 3. AUTHENTICATION & SESSION PERSISTENCE
         // ==========================================
         function initAuth() {
             db.ref('passwords').once('value', snap => {
                 if(!snap.exists()) db.ref('passwords').set({ admin: 'admin789', ankit: '2026' });
             });
+            checkSession();
         }
-        initAuth();
+        
+        // Auto-login if session exists in localStorage
+        function checkSession() {
+            const savedRole = localStorage.getItem('uc_role');
+            const savedId = localStorage.getItem('uc_staffId');
+            const savedMsg = localStorage.getItem('uc_msg');
+            
+            if (savedRole) {
+                finalizeLogin(savedRole, savedId, savedMsg, false);
+            }
+        }
 
         function toggleLoginMode(mode) {
             document.getElementById('btnToggleMgmt').classList.remove('active');
@@ -551,7 +567,13 @@
             }
         }
 
-        function finalizeLogin(role, staffId, welcomeMsg) {
+        function finalizeLogin(role, staffId, welcomeMsg, saveSession = true) {
+            if (saveSession) {
+                localStorage.setItem('uc_role', role);
+                if (staffId) localStorage.setItem('uc_staffId', staffId);
+                localStorage.setItem('uc_msg', welcomeMsg);
+            }
+
             currentUserRole = role;
             loggedInStaffId = staffId;
             
@@ -569,7 +591,6 @@
                 switchTab('staffDashboard');
                 loadStaffPortalData();
                 
-                // Initialize reminder interval (checks every 2 minutes)
                 requestNotificationPermission();
                 clearInterval(notificationInterval);
                 notificationInterval = setInterval(triggerPunchReminder, 2 * 60 * 1000);
@@ -582,6 +603,7 @@
                 if(role === 'ankit') {
                     document.getElementById('btnReports').classList.add('hidden');
                     document.getElementById('systemSecuritySection').classList.add('hidden');
+                    // Hide the action column and its header from Ankit
                     document.getElementById('editStaffActionHeader').classList.add('hidden');
                 } else if (role === 'admin') {
                     document.getElementById('systemSecuritySection').classList.remove('hidden');
@@ -593,12 +615,17 @@
                 document.getElementById('punchDate').value = getTodayDateString();
                 document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
                 
+                renderStaffTable(); // ADDED: Forces the table to redraw with proper Admin permissions immediately!
                 switchTab('punch');
                 changeViewDate();
             }
         }
 
         function logout() {
+            localStorage.removeItem('uc_role');
+            localStorage.removeItem('uc_staffId');
+            localStorage.removeItem('uc_msg');
+
             currentUserRole = null;
             loggedInStaffId = null;
             hasPunchedInToday = false;
@@ -636,6 +663,7 @@
             document.getElementById('settingsTab').classList.add('hidden');
             document.getElementById('staffDashboardTab').classList.add('hidden');
             document.getElementById('staffHistoryTab').classList.add('hidden');
+            document.getElementById('staffSettingsTab').classList.add('hidden');
             
             document.querySelectorAll('#navTabs button').forEach(b => b.classList.remove('active'));
             document.getElementById(tab + 'Tab').classList.remove('hidden');
@@ -683,18 +711,17 @@
                     
                     if (!log) {
                         totalAbsent++;
-                        // "\uD83D\uDD34" = Red Circle
                         staffStatusList.push(`\uD83D\uDD34 *${staff.name}* - Absent`);
                     } else {
-                        let emoji = "\u26AA"; // White Circle default
+                        let emoji = "\u26AA";
                         let statusText = log.status || "Unknown";
                         let timeText = log.punchIn ? ` (In: ${log.punchIn})` : "";
                         
-                        if (statusText === 'On Time') { emoji = "\uD83D\uDFE2"; totalPresent++; } // Green
-                        else if (statusText === 'Late') { emoji = "\uD83D\uDFE0"; totalPresent++; } // Orange
-                        else if (statusText === 'Half Day') { emoji = "\uD83D\uDFE3"; totalPresent++; } // Purple
-                        else if (statusText === 'Week Off') { emoji = "\uD83D\uDD35"; totalWeekOff++; timeText = ""; } // Blue
-                        else if (statusText === 'Absent') { emoji = "\uD83D\uDD34"; totalAbsent++; timeText = ""; } // Red
+                        if (statusText === 'On Time') { emoji = "\uD83D\uDFE2"; totalPresent++; } 
+                        else if (statusText === 'Late') { emoji = "\uD83D\uDFE0"; totalPresent++; } 
+                        else if (statusText === 'Half Day') { emoji = "\uD83D\uDFE3"; totalPresent++; } 
+                        else if (statusText === 'Week Off') { emoji = "\uD83D\uDD35"; totalWeekOff++; timeText = ""; } 
+                        else if (statusText === 'Absent') { emoji = "\uD83D\uDD34"; totalAbsent++; timeText = ""; } 
 
                         staffStatusList.push(`${emoji} *${log.name}* - ${statusText}${timeText}`);
                     }
@@ -800,7 +827,11 @@
                 const staff = staffData[key];
                 if (!staff || !staff.name) continue; 
                 
-                let editBtn = currentUserRole === 'admin' ? `<td><button class="btn-warning btn-small" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button></td>` : '';
+                // ONLY admin can see the Edit button in the staff profile settings
+                let editBtn = (currentUserRole === 'admin') 
+                    ? `<td><button class="btn-warning btn-small" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button></td>` 
+                    : '';
+                    
                 tableHTML += `<tr><td>${staff.name}</td><td>${staff.pin || '1234'}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td>${editBtn}</tr>`;
                 selectHTML += `<option value="${key}">${staff.name}</option>`;
             }
@@ -894,6 +925,33 @@
         // ==========================================
         // 6. STAFF PORTAL LOGIC & SELF-PUNCH
         // ==========================================
+        function updateStaffPin() {
+            const currentPin = document.getElementById('staffCurrentPin').value;
+            const newPin = document.getElementById('staffNewPin').value;
+            const confirmPin = document.getElementById('staffConfirmPin').value;
+
+            if (!loggedInStaffId || !staffData[loggedInStaffId]) return;
+
+            const actualPin = staffData[loggedInStaffId].pin || "1234";
+
+            if (currentPin !== actualPin) {
+                alert("Current PIN is incorrect!"); return;
+            }
+            if (newPin.length !== 4 || isNaN(newPin)) {
+                alert("New PIN must be exactly 4 digits!"); return;
+            }
+            if (newPin !== confirmPin) {
+                alert("New PINs do not match!"); return;
+            }
+
+            db.ref(`staff/${loggedInStaffId}`).update({ pin: newPin }).then(() => {
+                alert("Your Login PIN has been updated successfully!");
+                document.getElementById('staffCurrentPin').value = '';
+                document.getElementById('staffNewPin').value = '';
+                document.getElementById('staffConfirmPin').value = '';
+            });
+        }
+        
         function staffSelfPunch(type) {
             if (!loggedInStaffId) return;
             const staff = staffData[loggedInStaffId];
@@ -1118,6 +1176,9 @@
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
             });
         }
+        
+        // Execute Session check on script load
+        window.onload = initAuth;
     </script>
 </body>
 </html>

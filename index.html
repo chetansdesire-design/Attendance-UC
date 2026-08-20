@@ -94,6 +94,7 @@
         .status-ontime { background: #10b981; }
         .status-late { background: #f59e0b; }
         .status-weekoff { background: #3b82f6; }
+        .status-halfday { background: #8b5cf6; }
 
         .hidden { display: none !important; }
         .clock-display { text-align: center; font-size: 2.2rem; font-weight: bold; margin-bottom: 5px; }
@@ -157,7 +158,7 @@
             <!-- Live Stat Cards -->
             <div class="flex-responsive" style="margin-bottom: 20px;">
                 <div style="flex: 1; background: rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 12px; opacity: 0.8;">Present</div>
+                    <div style="font-size: 12px; opacity: 0.8;">Present / Half Day</div>
                     <div id="statPresent" style="font-size: 24px; font-weight: bold; color: #10b981;">0</div>
                 </div>
                 <div style="flex: 1; background: rgba(245, 158, 11, 0.2); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #f59e0b;" onclick="toggleAbsentList()">
@@ -174,8 +175,8 @@
             
             <button class="btn-whatsapp" style="margin-bottom: 20px;" onclick="shareEODReport()">📱 Share EOD Report on WhatsApp</button>
 
-            <!-- Manual Punch IN (Replaces auto-time) -->
-            <h3 style="margin-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Punch IN (Manual Entry)</h3>
+            <!-- Manual Punch IN -->
+            <h3 style="margin-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Punch IN (Entry)</h3>
             <div class="flex-responsive">
                 <select id="punchStaffSelect" style="flex: 2; margin-bottom: 0;">
                     <option value="" disabled selected>Select Staff</option>
@@ -292,6 +293,7 @@
             <select id="editStatus">
                 <option value="On Time">On Time</option>
                 <option value="Late">Late</option>
+                <option value="Half Day">Half Day</option>
                 <option value="Week Off">Week Off</option>
                 <option value="Absent">Absent</option>
             </select>
@@ -323,8 +325,9 @@
                 </div>
             </div>
             <div class="flex-responsive" style="margin-top: 15px;">
-                <button class="btn-success" onclick="saveStaffEdit()">Save Profile</button>
-                <button class="btn-danger" onclick="closeEditStaffModal()">Cancel</button>
+                <button class="btn-success" onclick="saveStaffEdit()">Save</button>
+                <button class="btn-warning" onclick="closeEditStaffModal()">Cancel</button>
+                <button class="btn-danger" onclick="deleteStaff()">Delete</button>
             </div>
         </div>
     </div>
@@ -368,13 +371,11 @@
                     document.getElementById('mainApp').classList.remove('hidden');
                     
                     if(user === 'ankit') {
-                        // Ankit (Security): Hide Reports, Show Settings (but restrict it)
                         document.getElementById('btnReports').classList.add('hidden');
                         document.getElementById('btnSettings').classList.remove('hidden');
                         document.getElementById('systemSecuritySection').classList.add('hidden');
                         document.getElementById('editStaffActionHeader').classList.add('hidden');
                     } else if (user === 'admin') {
-                        // Admin: Full Access
                         document.getElementById('btnReports').classList.remove('hidden');
                         document.getElementById('btnSettings').classList.remove('hidden');
                         document.getElementById('systemSecuritySection').classList.remove('hidden');
@@ -383,11 +384,12 @@
                     }
                     
                     document.getElementById('globalViewDate').value = getTodayDateString();
-                    document.getElementById('punchDate').value = getTodayDateString(); // Default Dashboard punch date
+                    document.getElementById('punchDate').value = getTodayDateString();
                     document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
                     
                     switchTab('punch');
-                    changeViewDate(); // Load initial data
+                    renderStaffTable(); 
+                    changeViewDate();
                 } else {
                     alert("Invalid Username or Password!");
                 }
@@ -442,7 +444,6 @@
             return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         }
 
-        // Helper to format 24hr input to 12hr AM/PM string
         function format12H(time24) {
             if(!time24) return null;
             const [h, m] = time24.split(':');
@@ -450,7 +451,6 @@
             return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         }
         
-        // Helper to generate exact timestamp for math
         function getTimestamp(dStr, time24) {
             if(!time24) return null;
             return new Date(`${dStr}T${time24}:00`).getTime();
@@ -476,12 +476,13 @@
                 for(const staffId in logs) {
                     const log = logs[staffId];
                     if(!log || !log.name) continue;
-                    if(log.status === 'On Time' || log.status === 'Late') presentCount++;
+                    if(log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
                     if(log.status === 'Late') lateList.push(`- ${log.name} (In: ${log.punchIn})`);
+                    if(log.status === 'Half Day') lateList.push(`- ${log.name} (HALF DAY)`);
                 }
 
                 let text = `*URBAN CASA - Daily Attendance Report*\n*Date:* ${dateStr}\n\n`;
-                text += `*Total Present:* ${presentCount}\n`;
+                text += `*Total Present (inc. Half Day):* ${presentCount}\n`;
                 text += `*Total Absent:* ${absentCount}\n\n`;
                 
                 if(absentList.length > 0) {
@@ -489,7 +490,7 @@
                 }
                 
                 if(lateList.length > 0) {
-                    text += `*Late Staff:*\n${lateList.join('\n')}\n`;
+                    text += `*Late/Half Day Staff:*\n${lateList.join('\n')}\n`;
                 }
 
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -536,11 +537,12 @@
                     const log = logs[staffId];
                     if (!log || !log.name) continue;
 
-                    if(log.status === 'On Time' || log.status === 'Late') presentCount++;
+                    if(log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
 
                     let statusClass = 'status-ontime';
                     if(log.status === 'Late') statusClass = 'status-late';
                     if(log.status === 'Week Off') statusClass = 'status-weekoff';
+                    if(log.status === 'Half Day') statusClass = 'status-halfday';
 
                     const pIn = log.punchIn || '--';
                     const pOut = log.punchOut ? log.punchOut : '--';
@@ -579,6 +581,11 @@
         // ==========================================
         db.ref('staff').on('value', (snapshot) => {
             staffData = snapshot.val() || {};
+            renderStaffTable(); 
+            if(currentUserRole) changeViewDate();
+        });
+
+        function renderStaffTable() {
             const staffListBody = document.getElementById('staffListBody');
             const punchStaffSelect = document.getElementById('punchStaffSelect');
             
@@ -598,9 +605,7 @@
             }
             staffListBody.innerHTML = tableHTML;
             punchStaffSelect.innerHTML = selectHTML;
-            
-            if(currentUserRole) changeViewDate();
-        });
+        }
 
         document.getElementById('addStaffForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -620,33 +625,28 @@
             if (!staffId) { alert("Please select staff profile first!"); return; }
 
             const staff = staffData[staffId];
+            const now = new Date();
+            const liveDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const liveTime24 = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             if (type === 'weekoff') {
-                const targetDateStr = forceDateStr || document.getElementById('punchDate').value;
-                if(!targetDateStr) { alert("Please select a date!"); return; }
-                
+                const targetDateStr = forceDateStr || document.getElementById('punchDate').value || liveDateStr;
                 db.ref(`attendance/${targetDateStr}/${staffId}`).update({ name: staff.name, status: 'Week Off' }).then(() => {
-                    alert(`${staff.name} marked as Week Off for ${targetDateStr}.`);
+                    alert(`${staff.name} marked as Week Off.`);
                     document.getElementById('punchStaffSelect').value = "";
                 });
                 return;
             }
 
             if (type === 'in') {
-                const manualDate = document.getElementById('punchDate').value;
-                const manualTime = document.getElementById('punchTime').value;
-
-                if (!manualDate || !manualTime) {
-                    alert("Please manually select both the Date and the Time to punch in!");
-                    return;
-                }
+                const manualDate = document.getElementById('punchDate').value || liveDateStr;
+                const manualTime = document.getElementById('punchTime').value || liveTime24;
 
                 const timeString = format12H(manualTime);
                 const punchInTs = getTimestamp(manualDate, manualTime);
 
-                const [shiftHour, shiftMin] = staff.shiftStart.split(':').map(Number);
                 const shiftTime = new Date(`${manualDate}T${staff.shiftStart}:00`);
-                shiftTime.setMinutes(shiftTime.getMinutes() + 15); // 15 min grace period
+                shiftTime.setMinutes(shiftTime.getMinutes() + 15); 
                 
                 const punchInDateObj = new Date(`${manualDate}T${manualTime}:00`);
                 const status = punchInDateObj > shiftTime ? 'Late' : 'On Time';
@@ -660,16 +660,16 @@
                         name: staff.name, punchIn: timeString, punchInTs: punchInTs, status: status
                     }).then(() => {
                         document.getElementById('punchStaffSelect').value = "";
-                        document.getElementById('punchTime').value = ""; // clear time field after use
+                        document.getElementById('punchTime').value = ""; 
                     });
                 });
             } else if (type === 'out') {
-                const targetDateStr = forceDateStr || document.getElementById('globalViewDate').value;
+                const targetDateStr = forceDateStr || liveDateStr;
                 
-                // Ask security/admin for out time explicitly to match manual entry logic
-                let outTime24 = prompt("Enter Punch OUT time (24-hour format, e.g., 18:30):");
-                if(!outTime24) return;
-                
+                // Prompt Ankit for manual time, pre-filled with live current time
+                let outTime24 = prompt(`Enter Punch OUT time for ${staff.name}\n(24-hour format, e.g., 18:30):`, liveTime24);
+                if (!outTime24) return;
+
                 const timeString = format12H(outTime24);
                 const punchOutTs = getTimestamp(targetDateStr, outTime24);
 
@@ -682,12 +682,20 @@
                     const [eH, eM] = staff.shiftEnd.split(':').map(Number);
                     const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
 
+                    let finalStatus = data.status; 
+                    if (workedMins < (shiftMinsRequired * 0.5)) {
+                        finalStatus = 'Half Day';
+                    }
+
                     let otMins = workedMins - shiftMinsRequired;
                     if(otMins < 0) otMins = 0; 
                     const otHours = (otMins / 60).toFixed(2);
 
                     db.ref(`attendance/${targetDateStr}/${staffId}`).update({
-                        punchOut: timeString, punchOutTs: punchOutTs, otHours: parseFloat(otHours)
+                        punchOut: timeString, 
+                        punchOutTs: punchOutTs, 
+                        otHours: parseFloat(otHours),
+                        status: finalStatus
                     });
                 });
             }
@@ -739,6 +747,17 @@
                 closeEditStaffModal();
             });
         }
+        function deleteStaff() {
+            const id = document.getElementById('editStaffProfileId').value;
+            const name = document.getElementById('editStaffProfileName').value;
+            
+            if (confirm(`Are you sure you want to permanently delete ${name}'s profile?`)) {
+                db.ref(`staff/${id}`).remove().then(() => {
+                    alert(`${name} has been deleted from the system.`);
+                    closeEditStaffModal();
+                });
+            }
+        }
 
         // ==========================================
         // 6. HR EXCEL EXPORT LOGIC
@@ -753,7 +772,7 @@
                 const allData = snap.val() || {};
                 const stats = {};
 
-                for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, weekoff: 0, ot: 0 };
+                for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, halfday: 0, weekoff: 0, ot: 0 };
 
                 for(let dateKey in allData) {
                     if(dateKey.startsWith(monthStr)) {
@@ -762,6 +781,7 @@
                             if(stats[sId]) {
                                 const record = dailyData[sId];
                                 if(record.status === 'On Time' || record.status === 'Late') stats[sId].present++;
+                                else if(record.status === 'Half Day') stats[sId].halfday++;
                                 else if(record.status === 'Week Off') stats[sId].weekoff++;
                                 if(record.otHours) stats[sId].ot += record.otHours;
                             }
@@ -769,13 +789,13 @@
                     }
                 }
 
-                let csv = "S.No,Staff Name,Total Month Days,Present Days,Week Off Days,OT Hrs (Net),Extra Days\n";
+                let csv = "S.No,Staff Name,Total Month Days,Present Days,Half Days,Week Off Days,OT Hrs (Net),Extra Days\n";
                 let index = 1;
                 
                 for(let sId in stats) {
                     const st = stats[sId];
                     let extraDays = st.present > 26 ? (st.present - 26) : 0;
-                    csv += `${index},${st.name},${daysInMonth},${st.present},${st.weekoff},${st.ot.toFixed(2)},${extraDays}\n`;
+                    csv += `${index},${st.name},${daysInMonth},${st.present},${st.halfday},${st.weekoff},${st.ot.toFixed(2)},${extraDays}\n`;
                     index++;
                 }
 

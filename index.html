@@ -298,8 +298,9 @@
                 <option value="Absent">Absent</option>
             </select>
             <div class="flex-responsive" style="margin-top: 15px;">
-                <button class="btn-success" onclick="saveEdit()">Save Changes</button>
-                <button class="btn-danger" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-success" onclick="saveEdit()">Save</button>
+                <button class="btn-warning" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-danger" onclick="deleteDailyEntry()">Delete</button>
             </div>
         </div>
     </div>
@@ -461,37 +462,56 @@
             
             db.ref(`attendance/${dateStr}`).once('value').then(snap => {
                 const logs = snap.val() || {};
-                let presentCount = 0;
-                let absentCount = 0;
-                let lateList = [];
-                let absentList = [];
+                
+                let totalPresent = 0;
+                let totalAbsent = 0;
+                let totalWeekOff = 0;
+                let staffStatusList = [];
 
-                for(const staffId in staffData) {
-                    if(!logs[staffId]) {
-                        absentCount++;
-                        absentList.push(staffData[staffId].name);
+                for (const staffId in staffData) {
+                    const staff = staffData[staffId];
+                    const log = logs[staffId];
+                    
+                    if (!log) {
+                        totalAbsent++;
+                        staffStatusList.push(`🔴 *${staff.name}* - Absent`);
+                    } else {
+                        let emoji = "⚪";
+                        let statusText = log.status || "Unknown";
+                        let timeText = log.punchIn ? ` (In: ${log.punchIn})` : "";
+                        
+                        if (statusText === 'On Time') {
+                            emoji = "🟢";
+                            totalPresent++;
+                        } else if (statusText === 'Late') {
+                            emoji = "🟠";
+                            totalPresent++;
+                        } else if (statusText === 'Half Day') {
+                            emoji = "🟣";
+                            totalPresent++;
+                        } else if (statusText === 'Week Off') {
+                            emoji = "🔵";
+                            totalWeekOff++;
+                            timeText = ""; 
+                        } else if (statusText === 'Absent') {
+                            emoji = "🔴";
+                            totalAbsent++;
+                            timeText = "";
+                        }
+
+                        staffStatusList.push(`${emoji} *${log.name}* - ${statusText}${timeText}`);
                     }
                 }
 
-                for(const staffId in logs) {
-                    const log = logs[staffId];
-                    if(!log || !log.name) continue;
-                    if(log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
-                    if(log.status === 'Late') lateList.push(`- ${log.name} (In: ${log.punchIn})`);
-                    if(log.status === 'Half Day') lateList.push(`- ${log.name} (HALF DAY)`);
-                }
-
                 let text = `*URBAN CASA - Daily Attendance Report*\n*Date:* ${dateStr}\n\n`;
-                text += `*Total Present (inc. Half Day):* ${presentCount}\n`;
-                text += `*Total Absent:* ${absentCount}\n\n`;
+                text += `*Team Status:*\n`;
+                text += staffStatusList.join('\n') + `\n\n`;
                 
-                if(absentList.length > 0) {
-                    text += `*Absent Staff:*\n- ${absentList.join('\n- ')}\n\n`;
-                }
+                text += `*Summary:*\n`;
+                text += `Present (inc. Late/Half Day): ${totalPresent}\n`;
+                text += `Absent / Week Off: ${totalAbsent + totalWeekOff}\n\n`;
                 
-                if(lateList.length > 0) {
-                    text += `*Late/Half Day Staff:*\n${lateList.join('\n')}\n`;
-                }
+                text += `_Legend: 🟢 On Time | 🟠 Late | 🟣 Half Day | 🔵 Week Off | 🔴 Absent_`;
 
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
                 window.open(waUrl, '_blank');
@@ -514,11 +534,14 @@
 
                 for(const staffId in staffData) {
                     const staff = staffData[staffId];
-                    if(!logs[staffId]) {
+                    // Also consider Week Offs in the absent list breakdown on the dashboard for quick visual reference
+                    if(!logs[staffId] || logs[staffId].status === 'Absent' || logs[staffId].status === 'Week Off') {
                         absentCount++;
+                        let displayStatus = logs[staffId] ? logs[staffId].status : "Absent";
                         absentHTML += `
                             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 5px 0;">
                                 <span>${staff.name}</span>
+                                <span style="font-size:11px; opacity:0.8;">${displayStatus}</span>
                             </div>`;
                     }
                 }
@@ -558,7 +581,7 @@
                             ${adminAction}
                         </tr>`;
 
-                    if(log.punchIn && !log.punchOut) {
+                    if(log.punchIn && !log.punchOut && log.status !== 'Week Off' && log.status !== 'Absent') {
                         let lateWarning = log.status === 'Late' ? '<span style="color: #f59e0b; font-size: 11px; margin-left: 5px;">(LATE)</span>' : '';
                         activeHTML += `
                         <tr>
@@ -666,7 +689,6 @@
             } else if (type === 'out') {
                 const targetDateStr = forceDateStr || liveDateStr;
                 
-                // Prompt Ankit for manual time, pre-filled with live current time
                 let outTime24 = prompt(`Enter Punch OUT time for ${staff.name}\n(24-hour format, e.g., 18:30):`, liveTime24);
                 if (!outTime24) return;
 
@@ -712,7 +734,9 @@
             document.getElementById('editStatus').value = status;
             document.getElementById('editModal').classList.remove('hidden');
         }
+        
         function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+        
         function saveEdit() {
             const id = document.getElementById('editStaffId').value;
             const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
@@ -724,6 +748,28 @@
             }).then(() => closeEditModal());
         }
 
+        // --- NEW DELETE ENTRY FUNCTION ---
+        function deleteDailyEntry() {
+            if (currentUserRole !== 'admin') {
+                alert("Unauthorized: Only Admin can delete daily records.");
+                return;
+            }
+
+            const id = document.getElementById('editStaffId').value;
+            const name = document.getElementById('editStaffName').innerText;
+            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            
+            if (confirm(`Are you sure you want to permanently delete the attendance record for ${name} on ${targetDateStr}?`)) {
+                db.ref(`attendance/${targetDateStr}/${id}`).remove().then(() => {
+                    alert(`Record for ${name} has been deleted.`);
+                    closeEditModal();
+                }).catch((error) => {
+                    console.error("Error removing record: ", error);
+                    alert("Failed to delete record.");
+                });
+            }
+        }
+
         function openEditStaffModal(id, name, role, start, end) {
             document.getElementById('editStaffProfileId').value = id;
             document.getElementById('editStaffProfileName').value = name;
@@ -732,7 +778,9 @@
             document.getElementById('editStaffProfileEnd').value = end;
             document.getElementById('editStaffModal').classList.remove('hidden');
         }
+        
         function closeEditStaffModal() { document.getElementById('editStaffModal').classList.add('hidden'); }
+        
         function saveStaffEdit() {
             const id = document.getElementById('editStaffProfileId').value;
             const name = document.getElementById('editStaffProfileName').value;
@@ -747,6 +795,7 @@
                 closeEditStaffModal();
             });
         }
+        
         function deleteStaff() {
             const id = document.getElementById('editStaffProfileId').value;
             const name = document.getElementById('editStaffProfileName').value;

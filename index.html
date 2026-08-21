@@ -200,7 +200,7 @@
     <!-- Notification Toast -->
     <div id="notificationToast" class="toast hidden"></div>
 
-    <h1 class="header-title">URBAN CASA<br><span class="tagline">Premium Modular Kitchens & Wardrobes</span></h1>
+    <h1 class="header-title">URBAN CASA<br><span class="tagline">TIMELESS FURNITURE FOR MODERN LIVING</span></h1>
 
     <!-- 0. LOGIN SCREEN -->
     <div id="loginScreen" class="glass-panel">
@@ -416,10 +416,6 @@
         <!-- Staff Dashboard -->
         <div id="staffDashboardTab" class="glass-panel hidden">
             
-            <div id="staffShiftReminder" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; text-align: center; line-height: 1.4;">
-                ⚠️ <strong>Reminder:</strong> Your login hours must strictly follow your assigned shift. Logging less than 5 hours will automatically result in a Half Day.
-            </div>
-            
             <h4 style="margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; opacity: 0.9;">Current Month Summary</h4>
             
             <!-- Beautiful Single Line Stat Cards (Staff Dashboard) -->
@@ -470,6 +466,11 @@
         <div id="staffHistoryTab" class="glass-panel hidden">
             <h2 style="margin-bottom: 15px;">My Attendance Calendar</h2>
             
+            <!-- Reminder Shifted Here -->
+            <div id="staffShiftReminder" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; text-align: center; line-height: 1.4;">
+                ⚠️ <strong>Reminder:</strong> Your login hours must strictly follow your assigned shift. Logging less than 5 hours will automatically result in a Half Day.
+            </div>
+
             <div class="flex-responsive" style="margin-bottom: 15px;">
                 <label style="font-size: 14px; font-weight: bold; white-space: nowrap;">Select Month:</label>
                 <input type="month" id="staffHistoryMonth" style="margin-bottom: 0;" onchange="renderStaffHistoryTable()">
@@ -492,7 +493,6 @@
 
             <!-- Calendar Container injected here -->
             <div id="staffHistoryCalendarContainer"></div>
-
         </div>
 
         <!-- Staff Settings Tab -->
@@ -645,6 +645,18 @@
         });
 
         // ==========================================
+        // 1.B DEVICE LOCKING LOGIC
+        // ==========================================
+        function getDeviceId() {
+            let did = localStorage.getItem('uc_device_id');
+            if (!did) {
+                did = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                localStorage.setItem('uc_device_id', did);
+            }
+            return did;
+        }
+
+        // ==========================================
         // 2. GEO-LOCATION LOGIC
         // ==========================================
         function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
@@ -711,7 +723,7 @@
         }
 
         // ==========================================
-        // 4. AUTHENTICATION
+        // 4. AUTHENTICATION (WITH DEVICE LOCKING)
         // ==========================================
         function initAuth() {
             db.ref('passwords').once('value', snap => {
@@ -753,8 +765,36 @@
                 const sId = document.getElementById('loginStaffSelect').value;
                 const pin = document.getElementById('loginStaffPin').value.trim();
                 if (!sId) return alert("Please select your profile.");
-                if (pin === (staffData[sId].pin || "1234")) finalizeLogin('staff_user', sId, `Welcome, ${staffData[sId].name}`);
-                else alert("Invalid PIN!");
+                
+                const staff = staffData[sId];
+                if (pin === (staff.pin || "1234")) {
+                    
+                    // --- DEVICE LOCKING LOGIC ---
+                    const currentDeviceId = getDeviceId();
+                    const localLockedId = localStorage.getItem('uc_locked_staffId');
+
+                    // Check 1: Is this specific phone already locked to a different colleague?
+                    if (localLockedId && localLockedId !== sId) {
+                        return alert(`\uD83D\uDEAB Device Block: This phone is securely registered to another staff member. You cannot log in here.`);
+                    }
+
+                    // Check 2: Has this staff member locked their profile to a DIFFERENT phone in the database?
+                    if (staff.deviceId && staff.deviceId !== currentDeviceId) {
+                        return alert(`\uD83D\uDEAB Access Denied: Your profile is locked to your original mobile device. If you got a new phone, ask Admin to reset your lock.`);
+                    }
+
+                    // If profile is completely fresh, lock it to this device now.
+                    if (!staff.deviceId) {
+                        db.ref(`staff/${sId}`).update({ deviceId: currentDeviceId });
+                        localStorage.setItem('uc_locked_staffId', sId);
+                        alert(`🔒 Device Locked! Your account is now securely tied to this exact mobile phone.`);
+                    }
+                    // ----------------------------
+
+                    finalizeLogin('staff_user', sId, `Welcome, ${staff.name}`);
+                } else {
+                    alert("Invalid PIN!");
+                }
             }
         }
 
@@ -778,12 +818,7 @@
                 mgmtTabs.forEach(el => el.classList.add('hidden'));
                 staffTabs.forEach(el => el.classList.remove('hidden'));
                 
-                // Personalized reminder injection
-                if(staffData[staffId]) {
-                    const staff = staffData[staffId];
-                    document.getElementById('staffShiftReminder').innerHTML = `⚠️ <strong>Reminder:</strong> Your shift is from <strong>${staff.shiftStart} to ${staff.shiftEnd}</strong>. Logging less than 5 hours will automatically result in a Half Day.`;
-                }
-
+                // Reminder strictly localized to history tab now.
                 switchTab('staffDashboard');
                 loadStaffPortalData();
                 requestNotificationPermission();
@@ -816,7 +851,13 @@
         }
 
         function logout() {
-            localStorage.clear();
+            localStorage.clear(); 
+            // We want to KEEP the device lock in local storage, so we restore it after clear
+            const savedLock = localStorage.getItem('uc_locked_staffId');
+            const savedDid = localStorage.getItem('uc_device_id');
+            if(savedLock) localStorage.setItem('uc_locked_staffId', savedLock);
+            if(savedDid) localStorage.setItem('uc_device_id', savedDid);
+
             currentUserRole = null; loggedInStaffId = null; hasPunchedInToday = false;
             clearInterval(liveTimerInterval); clearInterval(notificationInterval);
             document.getElementById('loginUsername').value = '';
@@ -960,17 +1001,29 @@
                 const staff = staffData[key];
                 if (!staff || !staff.name) continue; 
                 let actionCols = "";
+                let lockIcon = staff.deviceId ? "🔒" : "🔓"; // Visual Indicator for you
+                
                 if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
                     let historyBtn = `<button class="btn-primary btn-small" onclick="openSelectedStaffHistory('${key}')">History</button>`;
                     let editBtn = (currentUserRole === 'admin') ? `<button class="btn-warning btn-small" style="margin-left:5px;" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button>` : '';
-                    actionCols = `<td>${historyBtn}${editBtn}</td>`;
+                    let resetBtn = (currentUserRole === 'admin' && staff.deviceId) ? `<button class="btn-danger btn-small" style="margin-left:5px;" title="Reset Device Lock" onclick="resetDeviceLock('${key}', '${staff.name}')">🔓</button>` : '';
+                    actionCols = `<td>${historyBtn}${editBtn}${resetBtn}</td>`;
                 }
-                tableHTML += `<tr><td>${staff.name}</td><td>${staff.pin || '1234'}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td>${actionCols}</tr>`;
+                tableHTML += `<tr><td>${staff.name} ${lockIcon}</td><td>${staff.pin || '1234'}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td>${actionCols}</tr>`;
                 selectHTML += `<option value="${key}">${staff.name}</option>`;
             }
             if(document.getElementById('staffListBody')) document.getElementById('staffListBody').innerHTML = tableHTML;
             if(document.getElementById('punchStaffSelect')) document.getElementById('punchStaffSelect').innerHTML = selectHTML;
             if(document.getElementById('loginStaffSelect')) document.getElementById('loginStaffSelect').innerHTML = selectHTML;
+        }
+        
+        // --- Admin Reset Device function ---
+        function resetDeviceLock(staffId, name) {
+            if(confirm(`Are you sure you want to RESET the device lock for ${name}? \n\nThis will allow them to login from a new mobile phone.`)) {
+                db.ref(`staff/${staffId}/deviceId`).remove().then(() => {
+                    alert(`Device successfully unlocked for ${name}!`);
+                });
+            }
         }
 
         document.getElementById('addStaffForm').addEventListener('submit', function(e) {

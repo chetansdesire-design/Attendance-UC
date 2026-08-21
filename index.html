@@ -161,8 +161,18 @@
             justify-content: center;
             align-items: center;
             border: 1px solid rgba(255,255,255,0.1);
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, border 0.2s;
         }
+        
+        /* Admin Interactive Calendar Styling */
+        .admin-clickable:hover {
+            border: 1px solid #00c6ff !important;
+            box-shadow: 0 0 12px rgba(0, 198, 255, 0.6);
+            cursor: pointer;
+            transform: scale(1.08);
+            z-index: 10;
+        }
+
         .cal-present { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; }
         .cal-late { background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; }
         .cal-half { background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: #8b5cf6; }
@@ -522,7 +532,8 @@
     <!-- Admin History Modal (Calendar View) -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
-            <h3 style="color: #00c6ff; margin-bottom: 15px;">History: <span id="historyStaffName"></span></h3>
+            <h3 style="color: #00c6ff; margin-bottom: 5px;">History: <span id="historyStaffName"></span></h3>
+            <p style="font-size: 11px; color: #f59e0b; margin-top: 0; margin-bottom: 15px;">💡 Admin Tip: Tap on any past date in the calendar below to instantly mark it as Present.</p>
             
             <div class="flex-responsive" style="margin-bottom: 15px;">
                 <input type="month" id="adminHistoryMonth" style="margin-bottom: 0;" onchange="renderAdminHistoryTable()">
@@ -555,6 +566,9 @@
         <div class="modal-content">
             <h3>Edit Entry: <span id="editStaffName"></span></h3>
             <input type="hidden" id="editStaffId">
+            <input type="hidden" id="editEntryDate">
+            <p style="font-size: 12px; opacity: 0.8; margin-top: -10px; margin-bottom: 15px;" id="editDateDisplay"></p>
+            
             <label style="font-size: 12px;">Punch IN (HH:MM AM/PM)</label>
             <input type="text" id="editPunchIn">
             <label style="font-size: 12px;">Punch OUT (HH:MM AM/PM)</label>
@@ -769,27 +783,22 @@
                 const staff = staffData[sId];
                 if (pin === (staff.pin || "1234")) {
                     
-                    // --- DEVICE LOCKING LOGIC ---
                     const currentDeviceId = getDeviceId();
                     const localLockedId = localStorage.getItem('uc_locked_staffId');
 
-                    // Check 1: Is this specific phone already locked to a different colleague?
                     if (localLockedId && localLockedId !== sId) {
                         return alert(`\uD83D\uDEAB Device Block: This phone is securely registered to another staff member. You cannot log in here.`);
                     }
 
-                    // Check 2: Has this staff member locked their profile to a DIFFERENT phone in the database?
                     if (staff.deviceId && staff.deviceId !== currentDeviceId) {
                         return alert(`\uD83D\uDEAB Access Denied: Your profile is locked to your original mobile device. If you got a new phone, ask Admin to reset your lock.`);
                     }
 
-                    // If profile is completely fresh, lock it to this device now.
                     if (!staff.deviceId) {
                         db.ref(`staff/${sId}`).update({ deviceId: currentDeviceId });
                         localStorage.setItem('uc_locked_staffId', sId);
                         alert(`🔒 Device Locked! Your account is now securely tied to this exact mobile phone.`);
                     }
-                    // ----------------------------
 
                     finalizeLogin('staff_user', sId, `Welcome, ${staff.name}`);
                 } else {
@@ -819,6 +828,11 @@
                 staffTabs.forEach(el => el.classList.remove('hidden'));
                 
                 // Reminder strictly localized to history tab now.
+                if(staffData[staffId]) {
+                    const staff = staffData[staffId];
+                    document.getElementById('staffShiftReminder').innerHTML = `⚠️ <strong>Reminder:</strong> Your shift is from <strong>${staff.shiftStart} to ${staff.shiftEnd}</strong>. Logging less than 5 hours will automatically result in a Half Day.`;
+                }
+
                 switchTab('staffDashboard');
                 loadStaffPortalData();
                 requestNotificationPermission();
@@ -975,7 +989,9 @@
                     
                     let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status === 'On Time' ? 'Present' : log.status || 'N/A');
                     const pIn = log.punchIn || '--', pOut = log.punchOut ? log.punchOut : '--';
-                    let adminAction = currentUserRole === 'admin' ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${pIn}', '${pOut}', '${displayStatus}')">Edit</button></td>` : '';
+                    
+                    // Both admin AND ankit get edit rights here if needed, but per previous logic, only admin for Dashboard edit table
+                    let adminAction = (currentUserRole === 'admin') ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${viewDateStr}', '${pIn}', '${pOut}', '${displayStatus}')">Edit</button></td>` : '';
                     reportHTML += `<tr><td><strong>${log.name}</strong></td><td>${pIn}</td><td>${pOut}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td>${adminAction}</tr>`;
 
                     if(log.punchIn && !log.punchOut && log.status !== 'Week Off' && log.status !== 'Absent') {
@@ -1001,7 +1017,7 @@
                 const staff = staffData[key];
                 if (!staff || !staff.name) continue; 
                 let actionCols = "";
-                let lockIcon = staff.deviceId ? "🔒" : "🔓"; // Visual Indicator for you
+                let lockIcon = staff.deviceId ? "🔒" : "🔓";
                 
                 if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
                     let historyBtn = `<button class="btn-primary btn-small" onclick="openSelectedStaffHistory('${key}')">History</button>`;
@@ -1213,7 +1229,10 @@
             return { totalDays, present: p + (h * 0.5), absent: a };
         }
 
-        function buildCalendarHTML(staffId, monthStr) {
+        // ==========================================
+        // 8.B BUILD CALENDAR WITH ADMIN CLICK-TO-PRESENT 
+        // ==========================================
+        function buildCalendarHTML(staffId, monthStr, isForAdmin = false) {
             const [y, m] = monthStr.split('-').map(Number);
             const daysInMonth = new Date(y, m, 0).getDate();
             const firstDay = new Date(y, m - 1, 1).getDay(); 
@@ -1247,13 +1266,52 @@
                     if (cellDate <= today) { cellClass = 'cal-absent'; subText = 'Absent'; }
                 }
                 
-                html += `<div class="calendar-cell ${cellClass}">
+                let adminClickAttr = '';
+                let adminHoverClass = '';
+                
+                // If it is Ankit or Admin looking at the history, enable Quick Punch!
+                if (isForAdmin && cellDate <= today) {
+                    adminClickAttr = `onclick="adminQuickMarkPresent('${staffId}', '${dateKey}')"`;
+                    adminHoverClass = 'admin-clickable';
+                }
+
+                html += `<div class="calendar-cell ${cellClass} ${adminHoverClass}" ${adminClickAttr}>
                             <div>${i}</div>
                             <div class="cal-date-text">${subText}</div>
                          </div>`;
             }
             html += '</div>';
             return html;
+        }
+
+        // --- NEW ADMIN QUICK-PUNCH CALENDAR ACTION ---
+        function adminQuickMarkPresent(staffId, dateStr) {
+            if(currentUserRole !== 'admin' && currentUserRole !== 'ankit') return;
+            const staff = staffData[staffId];
+            
+            if(!confirm(`Quick Edit: Mark ${staff.name} as PRESENT for ${dateStr}?`)) return;
+            
+            // Assign default shift in/out so the HR Excel report calculations work perfectly
+            const pIn = format12H(staff.shiftStart);
+            const pOut = format12H(staff.shiftEnd);
+            const pInTs = getTimestamp(dateStr, staff.shiftStart);
+            const pOutTs = getTimestamp(dateStr, staff.shiftEnd);
+            
+            db.ref(`attendance/${dateStr}/${staffId}`).update({
+                name: staff.name,
+                status: 'Present',
+                punchIn: pIn,
+                punchOut: pOut,
+                punchInTs: pInTs,
+                punchOutTs: pOutTs,
+                otHours: 0
+            }).then(() => {
+                const toast = document.getElementById('notificationToast');
+                toast.innerText = `✅ Success: ${staff.name} marked Present on ${dateStr}`;
+                toast.style.background = "#10b981";
+                toast.classList.remove('hidden');
+                setTimeout(() => { toast.classList.add('hidden'); toast.style.background = "#ff416c"; }, 3000);
+            });
         }
 
         function renderStaffDashboardStats() {
@@ -1275,7 +1333,7 @@
             document.getElementById('histStaffPresent').innerText = stats.present;
             document.getElementById('histStaffAbsent').innerText = stats.absent;
 
-            const calendarHTML = buildCalendarHTML(loggedInStaffId, selectedMonth);
+            const calendarHTML = buildCalendarHTML(loggedInStaffId, selectedMonth, false);
             document.getElementById('staffHistoryCalendarContainer').innerHTML = calendarHTML;
         }
 
@@ -1307,7 +1365,7 @@
             document.getElementById('adminHistPresent').innerText = stats.present;
             document.getElementById('adminHistAbsent').innerText = stats.absent;
 
-            const calendarHTML = buildCalendarHTML(currentAdminHistoryStaffId, selectedMonth);
+            const calendarHTML = buildCalendarHTML(currentAdminHistoryStaffId, selectedMonth, true); // True = Enables click-to-present
             document.getElementById('adminHistoryCalendarContainer').innerHTML = calendarHTML;
         }
 
@@ -1316,8 +1374,10 @@
         // ==========================================
         // 10. MODAL EDITING LOGIC (Admin Only)
         // ==========================================
-        function openEditModal(id, name, pIn, pOut, status) {
+        function openEditModal(id, name, dateStr, pIn, pOut, status) {
             document.getElementById('editStaffId').value = id;
+            document.getElementById('editEntryDate').value = dateStr;
+            document.getElementById('editDateDisplay').innerText = `Editing Date: ${dateStr}`;
             document.getElementById('editStaffName').innerText = name;
             document.getElementById('editPunchIn').value = pIn === '--' ? '' : pIn;
             document.getElementById('editPunchOut').value = pOut === '--' ? '' : pOut;
@@ -1326,14 +1386,17 @@
         }
         function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
         function saveEdit() {
-            const id = document.getElementById('editStaffId').value, targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            const id = document.getElementById('editStaffId').value;
+            const targetDateStr = document.getElementById('editEntryDate').value;
             db.ref(`attendance/${targetDateStr}/${id}`).update({
                 punchIn: document.getElementById('editPunchIn').value, punchOut: document.getElementById('editPunchOut').value, status: document.getElementById('editStatus').value
             }).then(() => closeEditModal());
         }
         function deleteDailyEntry() {
             if (currentUserRole !== 'admin') return alert("Unauthorized");
-            const id = document.getElementById('editStaffId').value, name = document.getElementById('editStaffName').innerText, targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            const id = document.getElementById('editStaffId').value;
+            const name = document.getElementById('editStaffName').innerText;
+            const targetDateStr = document.getElementById('editEntryDate').value;
             if (confirm(`Permanently delete the attendance record for ${name} on ${targetDateStr}?`)) {
                 db.ref(`attendance/${targetDateStr}/${id}`).remove().then(() => closeEditModal());
             }

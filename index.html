@@ -1220,12 +1220,15 @@
             });
         }
 
+        // --- UPDATED CALCULATE MONTH STATS LOGIC ---
+        // This dynamically calculates absent days based on elapsed dates, not just explicit 'Absent' records.
         function calculateMonthStats(allData, staffId, monthStr) {
-            let p = 0, h = 0, a = 0;
+            let p = 0, h = 0, a = 0, ot = 0;
             const now = new Date();
             const [y, m] = monthStr.split('-').map(Number);
             let totalDays = new Date(y, m, 0).getDate();
             
+            // Do not count future days in current month as absent
             if (now.getFullYear() === y && now.getMonth() + 1 === m) {
                 totalDays = now.getDate();
             } else if (new Date(y, m - 1, 1) > now) {
@@ -1235,13 +1238,19 @@
             for (let i = 1; i <= totalDays; i++) {
                 let dStr = `${monthStr}-${String(i).padStart(2, '0')}`;
                 let rec = allData[dStr] ? allData[dStr][staffId] : null;
+                
                 if (rec) {
                     if (rec.status === 'Present' || rec.status === 'On Time' || rec.status === 'Late') p++;
                     else if (rec.status === 'Half Day') h++;
                     else if (rec.status === 'Week Off' || rec.status === 'Absent') a++;
-                } else a++;
+                    
+                    if (rec.otHours) ot += parseFloat(rec.otHours);
+                } else {
+                    // No record found for a past/current date = they were absent/didn't work
+                    a++;
+                }
             }
-            return { totalDays, present: p + (h * 0.5), absent: a };
+            return { totalDays, present: p + (h * 0.5), absent: a, ot: ot };
         }
 
         // ==========================================
@@ -1304,6 +1313,9 @@
             if(currentUserRole !== 'admin' && currentUserRole !== 'ankit') return;
             const staff = staffData[staffId];
             
+            // Safety check in case the staff member was deleted
+            if(!staff) return alert("Error: Staff profile could not be found. They may have been deleted.");
+            
             document.getElementById('qaStaffId').value = staffId;
             document.getElementById('qaDate').value = dateStr;
             document.getElementById('qaSubtitle').innerHTML = `Staff: <strong>${staff.name}</strong> <br> Date: <strong>${dateStr}</strong>`;
@@ -1320,6 +1332,11 @@
             const dateStr = document.getElementById('qaDate').value;
             const staff = staffData[staffId];
             
+            if(!staff) {
+                closeQuickActionModal();
+                return alert("Error saving. Staff profile no longer exists.");
+            }
+
             let pIn = null, pOut = null, pInTs = null, pOutTs = null;
 
             if (status === 'Present') {
@@ -1478,40 +1495,42 @@
         }
 
         // ==========================================
-        // 11. HR EXCEL EXPORT LOGIC
+        // 11. HR EXCEL EXPORT LOGIC - UPDATED TO SYNC WITH CALENDAR
         // ==========================================
         function exportExcel() {
             const monthStr = document.getElementById('reportMonth').value; 
             if(!monthStr) return alert("Please select a month");
-            const [year, month] = monthStr.split('-'); const daysInMonth = new Date(year, month, 0).getDate();
 
+            // Fetch fresh attendance data to ensure we have the absolute latest records
             db.ref('attendance').once('value').then(snap => {
-                const allData = snap.val() || {}, stats = {};
-                for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, halfday: 0, absent: 0, ot: 0 };
+                const allData = snap.val() || {};
+                
+                let csv = "S.No,Staff Name,Report Month,Days Passed/Total,Present Days (inc. Half Days),Absent Days,OT Hrs (Net),Extra Days\n";
+                let index = 1;
 
-                for(let dateKey in allData) {
-                    if(dateKey.startsWith(monthStr)) {
-                        for(let sId in allData[dateKey]) {
-                            if(stats[sId]) {
-                                const record = allData[dateKey][sId];
-                                if(record.status === 'Present' || record.status === 'On Time' || record.status === 'Late') stats[sId].present++;
-                                else if(record.status === 'Half Day') stats[sId].halfday++;
-                                else if(record.status === 'Week Off' || record.status === 'Absent') stats[sId].absent++;
-                                if(record.otHours) stats[sId].ot += record.otHours;
-                            }
-                        }
-                    }
+                // Loop through every staff member in your database
+                for(let sId in staffData) {
+                    const stName = staffData[sId].name;
+                    
+                    // Use the newly unified calculation logic so Excel matches the Calendar exactly
+                    const stats = calculateMonthStats(allData, sId, monthStr);
+                    
+                    // Anything over 26 days present is counted as "Extra Days" (assuming 4 Sundays off)
+                    const extraDays = stats.present > 26 ? (stats.present - 26) : 0;
+                    
+                    csv += `${index},${stName},${monthStr},${stats.totalDays},${stats.present},${stats.absent},${stats.ot.toFixed(2)},${extraDays}\n`; 
+                    index++;
                 }
 
-                let csv = "S.No,Staff Name,Report Month,Total Month Days,Present Days (inc. Half Days),Absent Days,OT Hrs (Net),Extra Days\n", index = 1;
-                for(let sId in stats) {
-                    const st = stats[sId], effectivePresent = st.present + (st.halfday * 0.5), extraDays = effectivePresent > 26 ? (effectivePresent - 26) : 0;
-                    csv += `${index},${st.name},${monthStr},${daysInMonth},${effectivePresent},${st.absent},${st.ot.toFixed(2)},${extraDays}\n`; index++;
-                }
-
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }), url = window.URL.createObjectURL(blob), link = document.createElement('a');
-                link.setAttribute('href', url); link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                // Create and download the CSV
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob); 
+                const link = document.createElement('a');
+                link.setAttribute('href', url); 
+                link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
             });
         }
         

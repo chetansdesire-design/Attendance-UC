@@ -91,8 +91,8 @@
         th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 13px; }
         th { background: rgba(0, 0, 0, 0.2); }
 
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
-        .status-ontime { background: #10b981; }
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: white; display: inline-block; white-space: nowrap; }
+        .status-present { background: #10b981; }
         .status-late { background: #f59e0b; }
         .status-absent { background: #ff416c; }
         .status-halfday { background: #8b5cf6; }
@@ -110,14 +110,73 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
+        /* Beautiful Single Line Cards Layout */
+        .stats-row { 
+            display: flex !important; 
+            flex-direction: row !important; 
+            justify-content: space-between; 
+            gap: 10px; 
+            width: 100%; 
+            margin-bottom: 20px;
+        }
+        .stat-card { 
+            flex: 1; 
+            background: rgba(255, 255, 255, 0.15); 
+            border-radius: 10px; 
+            padding: 12px 5px; 
+            text-align: center; 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .stat-label { font-size: 11px; opacity: 0.9; margin-bottom: 4px; white-space: nowrap; }
+        .stat-value { font-size: 20px; font-weight: bold; }
+        .color-white { color: #fff; }
+        .color-green { color: #10b981; }
+        .color-red { color: #ff416c; }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .calendar-day-header {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0.8;
+            padding-bottom: 5px;
+        }
+        .calendar-cell {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 5px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            min-height: 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.2s;
+        }
+        .cal-present { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; }
+        .cal-late { background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #f59e0b; }
+        .cal-half { background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; color: #8b5cf6; }
+        .cal-absent { background: rgba(255, 65, 108, 0.2); border: 1px solid #ff416c; color: #ff416c; }
+        .cal-empty { background: transparent; border: none; }
+        .cal-date-text { font-size: 10px; opacity: 0.9; font-weight: normal; margin-top: 4px; white-space: nowrap; }
+
         /* Date Picker Header */
         .global-date-picker { text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; max-width: 600px; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .global-date-picker input { width: auto; margin: 0; padding: 6px 12px; }
 
         /* Modal */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #2a5298; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; border: 1px solid rgba(255,255,255,0.2); max-height: 90vh; overflow-y: auto; }
-        .history-modal-content { max-width: 500px; }
+        .modal-content { background: #2a5298; padding: 20px; border-radius: 15px; width: 95%; max-width: 500px; border: 1px solid rgba(255,255,255,0.2); max-height: 95vh; overflow-y: auto; }
 
         /* Toast Notification */
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ff416c; color: white; padding: 15px 25px; border-radius: 30px; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: opacity 0.5s ease; text-align: center; width: 80%; max-width: 400px; }
@@ -131,6 +190,8 @@
             .clock-display { font-size: 1.8rem; }
             .glass-panel { padding: 15px; }
             th, td { font-size: 12px; padding: 8px 4px; }
+            .calendar-cell { padding: 5px 2px; font-size: 13px; min-height: 45px; }
+            .cal-date-text { font-size: 9px; }
         }
     </style>
 </head>
@@ -201,15 +262,15 @@
         <div id="punchTab" class="glass-panel">
             <div class="clock-display" id="clockDisplay">00:00:00</div>
 
-            <!-- Live Stat Cards -->
-            <div class="flex-responsive" style="margin-bottom: 20px;">
-                <div style="flex: 1; background: rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 10px; text-align: center;">
-                    <div style="font-size: 12px; opacity: 0.8;">Present / Half Day</div>
-                    <div id="statPresent" style="font-size: 24px; font-weight: bold; color: #10b981;">0</div>
+            <!-- Beautiful Single Line Stat Cards (Admin Today) -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Present / Half Day</div>
+                    <div class="stat-value color-green" id="statPresent">0</div>
                 </div>
-                <div style="flex: 1; background: rgba(255, 65, 108, 0.2); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ff416c;" onclick="toggleAbsentList()">
-                    <div style="font-size: 12px; opacity: 0.8;">Absent (Tap to View)</div>
-                    <div id="statAbsent" style="font-size: 24px; font-weight: bold; color: #ff416c;">0</div>
+                <div class="stat-card" style="cursor: pointer; border-color: #ff416c;" onclick="toggleAbsentList()">
+                    <div class="stat-label">Absent (Tap)</div>
+                    <div class="stat-value color-red" id="statAbsent">0</div>
                 </div>
             </div>
 
@@ -219,7 +280,7 @@
                 <div id="absentNamesList" style="font-size: 14px; line-height: 1.8;">Loading...</div>
             </div>
             
-            <!-- WhatsApp share button with Unicode emoji escape -->
+            <!-- WhatsApp share button -->
             <button class="btn-whatsapp" id="waShareBtn" style="margin-bottom: 20px;" onclick="shareEODReport()"></button>
 
             <!-- Manual Punch IN -->
@@ -234,7 +295,6 @@
             </div>
             
             <div class="flex-responsive" style="margin-top: 15px;">
-                <!-- Changed to Mark Absent -->
                 <button class="btn-danger" style="flex: 1; margin-bottom:0;" onclick="markAttendance('absent')">Mark Absent</button>
             </div>
 
@@ -279,8 +339,8 @@
         <!-- 3. SETTINGS SECTION (Management) -->
         <div id="settingsTab" class="glass-panel hidden">
             
-            <!-- ADMIN ONLY: GEO FENCE SETTINGS -->
-            <div id="geoSettingsSection" class="hidden">
+            <!-- ADMIN ONLY: GEO SETTINGS -->
+            <div id="adminToolsSection" class="hidden">
                 <h2 style="color: #00c6ff;">Geo-Location Restrictions</h2>
                 <div class="flex-responsive">
                     <input type="text" id="geoLat" placeholder="Latitude (e.g. 17.4399)">
@@ -322,7 +382,7 @@
 
             <!-- Admin Only: Passwords -->
             <div id="systemSecuritySection">
-                <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">System Security</h3>
+                <h3 style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 20px;">Update Passwords</h3>
                 <div class="flex-responsive">
                     <select id="accountToUpdate" style="flex: 1; margin-bottom:0;">
                         <option value="ankit">Security (Ankit)</option>
@@ -356,13 +416,25 @@
         <!-- Staff Dashboard -->
         <div id="staffDashboardTab" class="glass-panel hidden">
             
-            <!-- Staff Monthly Stats Header -->
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                <h4 style="margin: 0 0 10px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; opacity: 0.9;">Current Month Summary</h4>
-                <div class="flex-responsive" style="text-align: center;">
-                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Total Days<br><strong id="staffTotalDays" style="font-size: 18px; color:#fff;">0</strong></div>
-                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Present Days<br><strong id="staffPresentDays" style="font-size: 18px; color: #10b981;">0</strong></div>
-                    <div style="flex: 1; font-size: 12px; opacity: 0.9;">Absent Days<br><strong id="staffAbsentDays" style="font-size: 18px; color: #ff416c;">0</strong></div>
+            <div id="staffShiftReminder" style="background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; text-align: center; line-height: 1.4;">
+                ⚠️ <strong>Reminder:</strong> Your login hours must strictly follow your assigned shift. Logging less than 5 hours will automatically result in a Half Day.
+            </div>
+            
+            <h4 style="margin: 0 0 15px 0; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; opacity: 0.9;">Current Month Summary</h4>
+            
+            <!-- Beautiful Single Line Stat Cards (Staff Dashboard) -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Days</div>
+                    <div class="stat-value color-white" id="dashStaffTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Present (inc. Half)</div>
+                    <div class="stat-value color-green" id="dashStaffPresent">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Absent</div>
+                    <div class="stat-value color-red" id="dashStaffAbsent">0</div>
                 </div>
             </div>
 
@@ -383,7 +455,7 @@
                     <div class="live-timer" id="liveStaffHours">00:00:00</div>
                     
                     <div class="flex-responsive" style="justify-content: center; margin-bottom: 20px;">
-                        <span id="staffPunchInDisplay" class="status-badge status-ontime" style="font-size: 14px; padding: 8px 15px;">In: --</span>
+                        <span id="staffPunchInDisplay" class="status-badge status-present" style="font-size: 14px; padding: 8px 15px;">In: --</span>
                         <span id="staffStatusDisplay" class="status-badge status-absent" style="font-size: 14px; padding: 8px 15px;">Status: --</span>
                     </div>
                     
@@ -394,25 +466,33 @@
             </div>
         </div>
 
-        <!-- Staff History -->
+        <!-- Staff History Calendar View -->
         <div id="staffHistoryTab" class="glass-panel hidden">
-            <h2>My Attendance History</h2>
-            <p style="font-size: 12px; opacity: 0.8; margin-top: -10px;">Showing recent logs...</p>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>IN</th>
-                            <th>OUT</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="staffHistoryBody">
-                        <tr><td colspan="4" style="text-align:center;">Loading history...</td></tr>
-                    </tbody>
-                </table>
+            <h2 style="margin-bottom: 15px;">My Attendance Calendar</h2>
+            
+            <div class="flex-responsive" style="margin-bottom: 15px;">
+                <label style="font-size: 14px; font-weight: bold; white-space: nowrap;">Select Month:</label>
+                <input type="month" id="staffHistoryMonth" style="margin-bottom: 0;" onchange="renderStaffHistoryTable()">
             </div>
+            
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Days</div>
+                    <div class="stat-value color-white" id="histStaffTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Present</div>
+                    <div class="stat-value color-green" id="histStaffPresent">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Absent</div>
+                    <div class="stat-value color-red" id="histStaffAbsent">0</div>
+                </div>
+            </div>
+
+            <!-- Calendar Container injected here -->
+            <div id="staffHistoryCalendarContainer"></div>
+
         </div>
 
         <!-- Staff Settings Tab -->
@@ -439,25 +519,33 @@
 
     <!-- Modals -->
 
-    <!-- Admin History Modal -->
+    <!-- Admin History Modal (Calendar View) -->
     <div id="historyModal" class="modal hidden">
-        <div class="modal-content history-modal-content">
-            <h3 style="color: #00c6ff;">History: <span id="historyStaffName"></span></h3>
-            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>IN</th>
-                            <th>OUT</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminHistoryBody">
-                        <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                    </tbody>
-                </table>
+        <div class="modal-content">
+            <h3 style="color: #00c6ff; margin-bottom: 15px;">History: <span id="historyStaffName"></span></h3>
+            
+            <div class="flex-responsive" style="margin-bottom: 15px;">
+                <input type="month" id="adminHistoryMonth" style="margin-bottom: 0;" onchange="renderAdminHistoryTable()">
             </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Days</div>
+                    <div class="stat-value color-white" id="adminHistTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Present</div>
+                    <div class="stat-value color-green" id="adminHistPresent">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Absent</div>
+                    <div class="stat-value color-red" id="adminHistAbsent">0</div>
+                </div>
+            </div>
+
+            <!-- Calendar Container injected here -->
+            <div id="adminHistoryCalendarContainer"></div>
+            
             <button class="btn-warning" style="margin-top: 15px;" onclick="closeHistoryModal()">Close</button>
         </div>
     </div>
@@ -473,7 +561,7 @@
             <input type="text" id="editPunchOut">
             <label style="font-size: 12px;">Status</label>
             <select id="editStatus">
-                <option value="On Time">On Time</option>
+                <option value="Present">Present</option>
                 <option value="Late">Late</option>
                 <option value="Half Day">Half Day</option>
                 <option value="Absent">Absent</option>
@@ -531,16 +619,19 @@
         let currentUserRole = null; 
         let loggedInStaffId = null;
         let currentListenerRef = null;
-        let staffHistoryListener = null;
+        let globalAttendanceListener = null;
         let liveTimerInterval = null;
         
         let notificationInterval;
         let hasPunchedInToday = false;
         
+        // Cache objects for History filtering
+        let allAttendanceDataCache = {};
+        let currentAdminHistoryStaffId = null;
+
         // Geo-Location State Variables
         let geoConfig = { enabled: false, lat: 0, lng: 0, radius: 50 };
 
-        // Load Geo-Settings into Memory
         db.ref('settings/geofence').on('value', snap => {
             if(snap.exists()) {
                 geoConfig = snap.val();
@@ -554,28 +645,21 @@
         });
 
         // ==========================================
-        // 2. GEO-LOCATION & HAERSINE MATH LOGIC
+        // 2. GEO-LOCATION LOGIC
         // ==========================================
         function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
-            var R = 6371; // Radius of the earth in km
+            var R = 6371; 
             var dLat = deg2rad(lat2-lat1);  
             var dLon = deg2rad(lon2-lon1); 
             var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
             var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-            return Math.round(R * c * 1000); // Distance in meters
+            return Math.round(R * c * 1000);
         }
         function deg2rad(deg) { return deg * (Math.PI/180); }
 
         function checkGeoLocation(callback) {
-            if (!geoConfig.enabled || geoConfig.enabled === "false") {
-                callback(true);
-                return;
-            }
-            if (!navigator.geolocation) {
-                alert("Geolocation is not supported by your browser/device.");
-                callback(false);
-                return;
-            }
+            if (!geoConfig.enabled || geoConfig.enabled === "false") { callback(true); return; }
+            if (!navigator.geolocation) { alert("Geolocation not supported."); callback(false); return; }
             navigator.geolocation.getCurrentPosition((pos) => {
                 const dist = getDistanceFromLatLonInM(pos.coords.latitude, pos.coords.longitude, parseFloat(geoConfig.lat), parseFloat(geoConfig.lng));
                 if (dist <= parseInt(geoConfig.radius)) {
@@ -585,7 +669,7 @@
                     callback(false);
                 }
             }, (err) => {
-                alert("Location access denied. Please enable location services and allow access in your browser to punch in.");
+                alert("Location access denied. Please allow access in browser settings.");
                 callback(false);
             }, { enableHighAccuracy: true });
         }
@@ -604,7 +688,7 @@
                 lng: document.getElementById('geoLng').value,
                 radius: document.getElementById('geoRadius').value,
                 enabled: document.getElementById('geoEnabled').value === "true"
-            }).then(() => alert("Geo-Location Settings Saved Successfully!"));
+            }).then(() => alert("Geo-Location Settings Saved!"));
         }
 
         // ==========================================
@@ -615,23 +699,19 @@
                 Notification.requestPermission();
             }
         }
-
         function triggerPunchReminder() {
             if (currentUserRole === 'staff_user' && !hasPunchedInToday) {
                 const toast = document.getElementById('notificationToast');
                 toast.classList.remove('hidden');
                 setTimeout(() => toast.classList.add('hidden'), 6000);
-                
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("URBAN CASA", { 
-                        body: "Reminder: You are logged in but have not punched in yet!",
-                    });
+                    new Notification("URBAN CASA", { body: "Reminder: You are logged in but have not punched in yet!" });
                 }
             }
         }
 
         // ==========================================
-        // 4. AUTHENTICATION & SESSION PERSISTENCE
+        // 4. AUTHENTICATION
         // ==========================================
         function initAuth() {
             db.ref('passwords').once('value', snap => {
@@ -639,7 +719,6 @@
             });
             checkSession();
         }
-        
         function checkSession() {
             const savedRole = localStorage.getItem('uc_role');
             const savedId = localStorage.getItem('uc_staffId');
@@ -650,7 +729,6 @@
         function toggleLoginMode(mode) {
             document.getElementById('btnToggleMgmt').classList.remove('active');
             document.getElementById('btnToggleStaff').classList.remove('active');
-            
             if (mode === 'mgmt') {
                 document.getElementById('btnToggleMgmt').classList.add('active');
                 document.getElementById('mgmtLoginBox').classList.remove('hidden');
@@ -666,27 +744,17 @@
             if (mode === 'mgmt') {
                 const user = document.getElementById('loginUsername').value.toLowerCase().trim();
                 const pass = document.getElementById('loginPassword').value.trim();
-
                 db.ref('passwords').once('value', snap => {
-                    const passwords = snap.val();
-                    if (passwords && passwords[user] === pass) {
+                    if (snap.val() && snap.val()[user] === pass) {
                         finalizeLogin(user, null, `Logged in as: ${user.toUpperCase()}`);
-                    } else {
-                        alert("Invalid Username or Password!");
-                    }
+                    } else alert("Invalid Username or Password!");
                 });
             } else if (mode === 'staff') {
                 const sId = document.getElementById('loginStaffSelect').value;
                 const pin = document.getElementById('loginStaffPin').value.trim();
-                
-                if (!sId) { alert("Please select your profile."); return; }
-                const correctPin = staffData[sId].pin || "1234"; 
-
-                if (pin === correctPin) {
-                    finalizeLogin('staff_user', sId, `Welcome, ${staffData[sId].name}`);
-                } else {
-                    alert("Invalid PIN!");
-                }
+                if (!sId) return alert("Please select your profile.");
+                if (pin === (staffData[sId].pin || "1234")) finalizeLogin('staff_user', sId, `Welcome, ${staffData[sId].name}`);
+                else alert("Invalid PIN!");
             }
         }
 
@@ -696,10 +764,8 @@
                 if (staffId) localStorage.setItem('uc_staffId', staffId);
                 localStorage.setItem('uc_msg', welcomeMsg);
             }
-
             currentUserRole = role;
             loggedInStaffId = staffId;
-            
             document.getElementById('welcomeText').innerText = welcomeMsg;
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
@@ -711,13 +777,18 @@
                 document.getElementById('datePickerContainer').classList.add('hidden');
                 mgmtTabs.forEach(el => el.classList.add('hidden'));
                 staffTabs.forEach(el => el.classList.remove('hidden'));
+                
+                // Personalized reminder injection
+                if(staffData[staffId]) {
+                    const staff = staffData[staffId];
+                    document.getElementById('staffShiftReminder').innerHTML = `⚠️ <strong>Reminder:</strong> Your shift is from <strong>${staff.shiftStart} to ${staff.shiftEnd}</strong>. Logging less than 5 hours will automatically result in a Half Day.`;
+                }
+
                 switchTab('staffDashboard');
                 loadStaffPortalData();
-                
                 requestNotificationPermission();
                 clearInterval(notificationInterval);
                 notificationInterval = setInterval(triggerPunchReminder, 2 * 60 * 1000);
-                
             } else {
                 document.getElementById('datePickerContainer').classList.remove('hidden');
                 staffTabs.forEach(el => el.classList.add('hidden'));
@@ -726,15 +797,16 @@
                 if(role === 'ankit') {
                     document.getElementById('btnReports').classList.add('hidden');
                     document.getElementById('systemSecuritySection').classList.add('hidden');
-                    document.getElementById('geoSettingsSection').classList.add('hidden');
+                    document.getElementById('adminToolsSection').classList.add('hidden');
+                    document.getElementById('editColumnHeader').classList.add('hidden');
                 } else if (role === 'admin') {
                     document.getElementById('systemSecuritySection').classList.remove('hidden');
-                    document.getElementById('geoSettingsSection').classList.remove('hidden');
+                    document.getElementById('adminToolsSection').classList.remove('hidden');
                     document.getElementById('editColumnHeader').classList.remove('hidden');
                 }
                 
                 document.getElementById('globalViewDate').value = getTodayDateString();
-                document.getElementById('punchDate').value = getTodayDateString(); // Sync initially
+                document.getElementById('punchDate').value = getTodayDateString(); 
                 document.getElementById('reportMonth').value = getTodayDateString().slice(0, 7);
                 
                 renderStaffTable(); 
@@ -744,34 +816,23 @@
         }
 
         function logout() {
-            localStorage.removeItem('uc_role');
-            localStorage.removeItem('uc_staffId');
-            localStorage.removeItem('uc_msg');
-
-            currentUserRole = null;
-            loggedInStaffId = null;
-            hasPunchedInToday = false;
-            
-            clearInterval(liveTimerInterval);
-            clearInterval(notificationInterval);
-            
+            localStorage.clear();
+            currentUserRole = null; loggedInStaffId = null; hasPunchedInToday = false;
+            clearInterval(liveTimerInterval); clearInterval(notificationInterval);
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
             document.getElementById('loginStaffPin').value = '';
             document.getElementById('mainApp').classList.add('hidden');
             document.getElementById('loginScreen').classList.remove('hidden');
-            
             if(currentListenerRef) currentListenerRef.off();
-            if(staffHistoryListener) staffHistoryListener.off();
-            
-            const allPanels = document.querySelectorAll('.glass-panel');
-            allPanels.forEach(p => { if(p.id !== 'loginScreen') p.classList.add('hidden'); });
+            if(globalAttendanceListener) globalAttendanceListener.off();
+            document.querySelectorAll('.glass-panel').forEach(p => { if(p.id !== 'loginScreen') p.classList.add('hidden'); });
         }
 
         function changePassword() {
             const account = document.getElementById('accountToUpdate').value;
             const newPass = document.getElementById('newPassword').value.trim();
-            if(newPass.length < 4) { alert("Password too short!"); return; }
+            if(newPass.length < 4) return alert("Password too short!");
             db.ref(`passwords/${account}`).set(newPass).then(() => {
                 alert(`${account.toUpperCase()} password updated successfully!`);
                 document.getElementById('newPassword').value = '';
@@ -779,43 +840,26 @@
         }
 
         // ==========================================
-        // 5. UI, CLOCK & EOD REPORT LOGIC
+        // 5. HELPER FUNCTIONS & EOD SHARE
         // ==========================================
         function switchTab(tab) {
-            document.getElementById('punchTab').classList.add('hidden');
-            document.getElementById('reportsTab').classList.add('hidden');
-            document.getElementById('settingsTab').classList.add('hidden');
-            document.getElementById('staffDashboardTab').classList.add('hidden');
-            document.getElementById('staffHistoryTab').classList.add('hidden');
-            document.getElementById('staffSettingsTab').classList.add('hidden');
-            
+            document.querySelectorAll('.glass-panel').forEach(p => { if(p.id !== 'loginScreen') p.classList.add('hidden'); });
             document.querySelectorAll('#navTabs button').forEach(b => b.classList.remove('active'));
             document.getElementById(tab + 'Tab').classList.remove('hidden');
-            
             let btnId = 'btn' + tab.charAt(0).toUpperCase() + tab.slice(1);
             if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
         }
 
-        function toggleAbsentList() {
-            document.getElementById('absentListContainer').classList.toggle('hidden');
-        }
-
-        setInterval(() => {
-            document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString('en-IN');
-        }, 1000);
-
-        function getTodayDateString() {
-            const date = new Date();
-            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        }
-
+        function toggleAbsentList() { document.getElementById('absentListContainer').classList.toggle('hidden'); }
+        setInterval(() => { document.getElementById('clockDisplay').innerText = new Date().toLocaleTimeString('en-IN'); }, 1000);
+        function getTodayDateString() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+        
         function format12H(time24) {
             if(!time24) return null;
             const [h, m] = time24.split(':');
             const d = new Date(); d.setHours(h, m, 0);
             return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         }
-        
         function getTimestamp(dStr, time24) {
             if(!time24) return null;
             return new Date(`${dStr}T${time24}:00`).getTime();
@@ -823,183 +867,126 @@
 
         function shareEODReport() {
             const dateStr = document.getElementById('globalViewDate').value || getTodayDateString();
-            
             db.ref(`attendance/${dateStr}`).once('value').then(snap => {
                 const logs = snap.val() || {};
-                let totalPresent = 0, totalAbsent = 0;
-                let staffStatusList = [];
-
+                let totalPresent = 0, totalAbsent = 0, staffStatusList = [];
                 for (const staffId in staffData) {
                     const staff = staffData[staffId];
                     const log = logs[staffId];
-                    
                     if (!log) {
-                        totalAbsent++;
-                        staffStatusList.push(`\uD83D\uDD34 *${staff.name}* - Absent`);
+                        totalAbsent++; staffStatusList.push(`\uD83D\uDD34 *${staff.name}* - Absent`);
                     } else {
-                        let emoji = "\u26AA";
-                        let statusText = log.status || "Unknown";
-                        let timeText = log.punchIn ? ` (In: ${log.punchIn})` : "";
-                        
-                        if (statusText === 'On Time') { emoji = "\uD83D\uDFE2"; totalPresent++; } 
+                        let emoji = "\u26AA", statusText = log.status || "Unknown", timeText = log.punchIn ? ` (In: ${log.punchIn})` : "";
+                        if (statusText === 'Present' || statusText === 'On Time') { emoji = "\uD83D\uDFE2"; totalPresent++; statusText = 'Present'; } 
                         else if (statusText === 'Late') { emoji = "\uD83D\uDFE0"; totalPresent++; } 
                         else if (statusText === 'Half Day') { emoji = "\uD83D\uDFE3"; totalPresent++; } 
-                        // Support legacy 'Week Off' data and merge them to 'Absent'
-                        else if (statusText === 'Week Off' || statusText === 'Absent') { 
-                            emoji = "\uD83D\uDD34"; 
-                            statusText = "Absent"; 
-                            totalAbsent++; 
-                            timeText = ""; 
-                        } 
-
+                        else if (statusText === 'Week Off' || statusText === 'Absent') { emoji = "\uD83D\uDD34"; statusText = "Absent"; totalAbsent++; timeText = ""; } 
                         staffStatusList.push(`${emoji} *${log.name}* - ${statusText}${timeText}`);
                     }
                 }
-
-                let text = `*URBAN CASA - Daily Attendance Report*\n*Date:* ${dateStr}\n\n`;
-                text += `*Team Status:*\n${staffStatusList.join('\n')}\n\n`;
-                text += `*Summary:*\nPresent (inc. Late/Half Day): ${totalPresent}\nAbsent: ${totalAbsent}\n\n`;
-                text += `_Legend: \uD83D\uDFE2 On Time | \uD83D\uDFE0 Late | \uD83D\uDFE3 Half Day | \uD83D\uDD34 Absent_`;
-
+                let text = `*URBAN CASA - Daily Attendance Report*\n*Date:* ${dateStr}\n\n*Team Status:*\n${staffStatusList.join('\n')}\n\n*Summary:*\nPresent (inc. Half): ${totalPresent}\nAbsent: ${totalAbsent}\n\n_Legend: \uD83D\uDFE2 Present | \uD83D\uDFE0 Late | \uD83D\uDFE3 Half Day | \uD83D\uDD34 Absent_`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             });
         }
 
+        // ==========================================
+        // 6. ADMIN DASHBOARD & STAFF MANAGEMENT
+        // ==========================================
         function changeViewDate() {
             const viewDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
-            
-            // Sync Manual Punch Date automatically to prevent errors
-            document.getElementById('punchDate').value = viewDateStr;
+            document.getElementById('punchDate').value = viewDateStr; // Sync Manual Punch
 
             if(currentListenerRef) currentListenerRef.off();
             currentListenerRef = db.ref(`attendance/${viewDateStr}`);
-            
             currentListenerRef.on('value', (snapshot) => {
                 const logs = snapshot.val() || {};
                 const reportTableBody = document.getElementById('reportTableBody');
                 const activePunchesBody = document.getElementById('activePunchesBody');
                 
-                let reportHTML = "", activeHTML = "", absentHTML = "";
-                let presentCount = 0, absentCount = 0;
+                let reportHTML = "", activeHTML = "", absentHTML = "", presentCount = 0, absentCount = 0;
 
                 for(const staffId in staffData) {
                     const staff = staffData[staffId];
-                    // Legacy Week Off mapped to absent view
                     if(!logs[staffId] || logs[staffId].status === 'Absent' || logs[staffId].status === 'Week Off') {
                         absentCount++;
                         let displayStatus = logs[staffId] ? (logs[staffId].status === 'Week Off' ? 'Absent' : logs[staffId].status) : "Absent";
                         absentHTML += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 5px 0;"><span>${staff.name}</span><span style="font-size:11px; opacity:0.8;">${displayStatus}</span></div>`;
                     }
                 }
-
                 document.getElementById('statAbsent').innerText = absentCount;
                 document.getElementById('absentNamesList').innerHTML = absentHTML || "<div>Everyone is present!</div>";
 
                 if (Object.keys(logs).length === 0) {
                     reportTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No punches found.</td></tr>';
                     activePunchesBody.innerHTML = '<tr><td style="text-align:center;">No active staff.</td></tr>';
-                    document.getElementById('statPresent').innerText = "0";
-                    return;
+                    document.getElementById('statPresent').innerText = "0"; return;
                 }
 
                 for (const staffId in logs) {
                     const log = logs[staffId];
                     if (!log || !log.name) continue;
 
-                    if(log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
-
-                    let statusClass = 'status-ontime';
+                    if(log.status === 'Present' || log.status === 'On Time' || log.status === 'Late' || log.status === 'Half Day') presentCount++;
+                    let statusClass = 'status-present';
                     if(log.status === 'Late') statusClass = 'status-late';
                     if(log.status === 'Week Off' || log.status === 'Absent') statusClass = 'status-absent';
                     if(log.status === 'Half Day') statusClass = 'status-halfday';
                     
-                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status || 'N/A');
-
-                    const pIn = log.punchIn || '--';
-                    const pOut = log.punchOut ? log.punchOut : '--';
-                    let adminAction = currentUserRole === 'admin' ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${pIn}', '${pOut}', '${log.status}')">Edit</button></td>` : '';
-
+                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status === 'On Time' ? 'Present' : log.status || 'N/A');
+                    const pIn = log.punchIn || '--', pOut = log.punchOut ? log.punchOut : '--';
+                    let adminAction = currentUserRole === 'admin' ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${pIn}', '${pOut}', '${displayStatus}')">Edit</button></td>` : '';
                     reportHTML += `<tr><td><strong>${log.name}</strong></td><td>${pIn}</td><td>${pOut}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td>${adminAction}</tr>`;
 
                     if(log.punchIn && !log.punchOut && log.status !== 'Week Off' && log.status !== 'Absent') {
                         let lateWarning = log.status === 'Late' ? '<span style="color: #f59e0b; font-size: 11px; margin-left: 5px;">(LATE)</span>' : '';
-                        activeHTML += `
-                        <tr>
-                            <td style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
-                                <div><strong>${log.name}</strong> ${lateWarning}<br><span style="font-size: 11px; opacity: 0.8;">In: ${pIn}</span></div>
-                                <button class="btn-danger btn-small" onclick="markAttendance('out', '${staffId}', '${viewDateStr}')">Punch OUT</button>
-                            </td>
-                        </tr>`;
+                        activeHTML += `<tr><td style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;"><div><strong>${log.name}</strong> ${lateWarning}<br><span style="font-size: 11px; opacity: 0.8;">In: ${pIn}</span></div><button class="btn-danger btn-small" onclick="markAttendance('out', '${staffId}', '${viewDateStr}')">Punch OUT</button></td></tr>`;
                     }
                 }
-                
                 document.getElementById('statPresent').innerText = presentCount;
                 reportTableBody.innerHTML = reportHTML;
                 activePunchesBody.innerHTML = activeHTML || '<tr><td style="text-align:center;">No active staff.</td></tr>';
             });
         }
 
-        // ==========================================
-        // 6. DATABASE STAFF & PUNCH LOGIC
-        // ==========================================
         db.ref('staff').on('value', (snapshot) => {
             staffData = snapshot.val() || {};
             renderStaffTable(); 
-            if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
-                changeViewDate();
-            }
+            if(currentUserRole === 'admin' || currentUserRole === 'ankit') changeViewDate();
         });
 
         function renderStaffTable() {
-            const staffListBody = document.getElementById('staffListBody');
-            const punchStaffSelect = document.getElementById('punchStaffSelect');
-            const loginStaffSelect = document.getElementById('loginStaffSelect');
-            
-            let tableHTML = "";
-            let selectHTML = '<option value="" disabled selected>Select Staff Profile</option>';
-
+            let tableHTML = "", selectHTML = '<option value="" disabled selected>Select Staff Profile</option>';
             for (const key in staffData) {
                 const staff = staffData[key];
                 if (!staff || !staff.name) continue; 
-                
                 let actionCols = "";
-                // Both admin and ankit can see History
                 if(currentUserRole === 'admin' || currentUserRole === 'ankit') {
-                    let historyBtn = `<button class="btn-primary btn-small" onclick="viewStaffHistory('${key}', '${staff.name}')">History</button>`;
-                    let editBtn = (currentUserRole === 'admin') 
-                        ? `<button class="btn-warning btn-small" style="margin-left:5px;" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button>` 
-                        : '';
+                    let historyBtn = `<button class="btn-primary btn-small" onclick="openSelectedStaffHistory('${key}')">History</button>`;
+                    let editBtn = (currentUserRole === 'admin') ? `<button class="btn-warning btn-small" style="margin-left:5px;" onclick="openEditStaffModal('${key}', '${staff.name}', '${staff.role}', '${staff.shiftStart}', '${staff.shiftEnd}', '${staff.pin || '1234'}')">Edit</button>` : '';
                     actionCols = `<td>${historyBtn}${editBtn}</td>`;
                 }
-
                 tableHTML += `<tr><td>${staff.name}</td><td>${staff.pin || '1234'}</td><td>${staff.shiftStart} - ${staff.shiftEnd}</td>${actionCols}</tr>`;
                 selectHTML += `<option value="${key}">${staff.name}</option>`;
             }
-            
-            if(staffListBody) staffListBody.innerHTML = tableHTML;
-            if(punchStaffSelect) punchStaffSelect.innerHTML = selectHTML;
-            if(loginStaffSelect) loginStaffSelect.innerHTML = selectHTML;
+            if(document.getElementById('staffListBody')) document.getElementById('staffListBody').innerHTML = tableHTML;
+            if(document.getElementById('punchStaffSelect')) document.getElementById('punchStaffSelect').innerHTML = selectHTML;
+            if(document.getElementById('loginStaffSelect')) document.getElementById('loginStaffSelect').innerHTML = selectHTML;
         }
 
         document.getElementById('addStaffForm').addEventListener('submit', function(e) {
             e.preventDefault();
             db.ref('staff').push({
-                name: document.getElementById('staffName').value,
-                role: document.getElementById('staffRole').value,
-                shiftStart: document.getElementById('shiftStart').value,
-                shiftEnd: document.getElementById('shiftEnd').value,
-                pin: document.getElementById('staffPin').value
-            }).then(() => {
-                alert("Staff added successfully!");
-                this.reset();
-                document.getElementById('staffPin').value = "1234";
-            });
+                name: document.getElementById('staffName').value, role: document.getElementById('staffRole').value,
+                shiftStart: document.getElementById('shiftStart').value, shiftEnd: document.getElementById('shiftEnd').value, pin: document.getElementById('staffPin').value
+            }).then(() => { alert("Staff added successfully!"); this.reset(); document.getElementById('staffPin').value = "1234"; });
         });
 
-        // Admin manual punch (no geo check required)
+        // ==========================================
+        // 7. PUNCH LOGIC (Admin Manual & Staff Self)
+        // ==========================================
         function markAttendance(type, directStaffId = null, forceDateStr = null) {
             const staffId = directStaffId || document.getElementById('punchStaffSelect').value;
-            if (!staffId) { alert("Please select staff profile first!"); return; }
+            if (!staffId) return alert("Please select staff profile first!");
 
             const staff = staffData[staffId];
             const now = new Date();
@@ -1009,170 +996,106 @@
             if (type === 'absent') {
                 const targetDateStr = forceDateStr || document.getElementById('punchDate').value || liveDateStr;
                 db.ref(`attendance/${targetDateStr}/${staffId}`).update({ name: staff.name, status: 'Absent' }).then(() => {
-                    alert(`${staff.name} marked as Absent.`);
-                    document.getElementById('punchStaffSelect').value = "";
-                });
-                return;
+                    alert(`${staff.name} marked as Absent.`); document.getElementById('punchStaffSelect').value = "";
+                }); return;
             }
 
             if (type === 'in') {
                 const manualDate = document.getElementById('punchDate').value || liveDateStr;
                 const manualTime = document.getElementById('punchTime').value || liveTime24;
-                const timeString = format12H(manualTime);
-                const punchInTs = getTimestamp(manualDate, manualTime);
+                const timeString = format12H(manualTime), punchInTs = getTimestamp(manualDate, manualTime);
 
+                // 30 MIN GRACE PERIOD FOR PRESENT STATUS
                 const shiftTime = new Date(`${manualDate}T${staff.shiftStart}:00`);
-                shiftTime.setMinutes(shiftTime.getMinutes() + 15); 
-                const status = new Date(`${manualDate}T${manualTime}:00`) > shiftTime ? 'Late' : 'On Time';
+                shiftTime.setMinutes(shiftTime.getMinutes() + 30); 
+                const status = new Date(`${manualDate}T${manualTime}:00`) > shiftTime ? 'Late' : 'Present';
 
                 db.ref(`attendance/${manualDate}/${staffId}`).once('value').then(snap => {
-                    // FIX: Allow Overwrite instead of strictly blocking previous entries
                     if(snap.exists() && snap.val().punchIn) { 
-                        if(!confirm(`Staff already has a punch IN (${snap.val().punchIn}) for ${manualDate}.\nDo you want to overwrite it?`)) {
-                            return; 
-                        }
+                        if(!confirm(`Staff already has a punch IN (${snap.val().punchIn}) for ${manualDate}.\nDo you want to overwrite it?`)) return; 
                     }
-                    db.ref(`attendance/${manualDate}/${staffId}`).update({
-                        name: staff.name, punchIn: timeString, punchInTs: punchInTs, status: status
-                    }).then(() => {
-                        document.getElementById('punchStaffSelect').value = "";
-                        document.getElementById('punchTime').value = ""; 
-                        alert("Punched IN successfully!");
+                    db.ref(`attendance/${manualDate}/${staffId}`).update({ name: staff.name, punchIn: timeString, punchInTs: punchInTs, status: status }).then(() => {
+                        document.getElementById('punchStaffSelect').value = ""; document.getElementById('punchTime').value = ""; alert("Punched IN successfully!");
                     });
                 });
             } else if (type === 'out') {
                 const targetDateStr = forceDateStr || liveDateStr;
                 let outTime24 = prompt(`Enter Punch OUT time for ${staff.name}\n(24-hour format, e.g., 18:30):`, liveTime24);
                 if (!outTime24) return;
-
-                const timeString = format12H(outTime24);
-                const punchOutTs = getTimestamp(targetDateStr, outTime24);
+                const timeString = format12H(outTime24), punchOutTs = getTimestamp(targetDateStr, outTime24);
 
                 db.ref(`attendance/${targetDateStr}/${staffId}`).once('value').then(snap => {
                     const data = snap.val();
-                    if(!data || !data.punchInTs) { alert("Error: Cannot Punch OUT before Punching IN!"); return; }
+                    if(!data || !data.punchInTs) return alert("Error: Cannot Punch OUT before Punching IN!");
 
-                    const workedMins = (punchOutTs - data.punchInTs) / (1000 * 60);
+                    const workedMins = (punchOutTs - data.punchInTs) / 60000;
                     const [sH, sM] = staff.shiftStart.split(':').map(Number);
                     const [eH, eM] = staff.shiftEnd.split(':').map(Number);
                     const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
 
-                    let finalStatus = data.status; 
-                    if (workedMins < (shiftMinsRequired * 0.5)) finalStatus = 'Half Day';
-                    let otMins = Math.max(0, workedMins - shiftMinsRequired);
-                    const otHours = (otMins / 60).toFixed(2);
+                    let finalStatus = (workedMins < 300) ? 'Half Day' : data.status; 
+                    let otMins = Math.max(0, workedMins - shiftMinsRequired), otHours = (otMins / 60).toFixed(2);
 
-                    db.ref(`attendance/${targetDateStr}/${staffId}`).update({
-                        punchOut: timeString, punchOutTs: punchOutTs, otHours: parseFloat(otHours), status: finalStatus
-                    });
+                    db.ref(`attendance/${targetDateStr}/${staffId}`).update({ punchOut: timeString, punchOutTs: punchOutTs, otHours: parseFloat(otHours), status: finalStatus });
                 });
             }
         }
 
-        // ==========================================
-        // 7. STAFF PORTAL LOGIC & SELF-PUNCH (Geo)
-        // ==========================================
-        function updateStaffPin() {
-            const currentPin = document.getElementById('staffCurrentPin').value;
-            const newPin = document.getElementById('staffNewPin').value;
-            const confirmPin = document.getElementById('staffConfirmPin').value;
-
-            if (!loggedInStaffId || !staffData[loggedInStaffId]) return;
-
-            const actualPin = staffData[loggedInStaffId].pin || "1234";
-
-            if (currentPin !== actualPin) {
-                alert("Current PIN is incorrect!"); return;
-            }
-            if (newPin.length !== 4 || isNaN(newPin)) {
-                alert("New PIN must be exactly 4 digits!"); return;
-            }
-            if (newPin !== confirmPin) {
-                alert("New PINs do not match!"); return;
-            }
-
-            db.ref(`staff/${loggedInStaffId}`).update({ pin: newPin }).then(() => {
-                alert("Your Login PIN has been updated successfully!");
-                document.getElementById('staffCurrentPin').value = '';
-                document.getElementById('staffNewPin').value = '';
-                document.getElementById('staffConfirmPin').value = '';
-            });
-        }
-        
         function staffSelfPunch(type) {
             if (!loggedInStaffId) return;
-            
-            // Set Loading UI State
             const btn = type === 'in' ? document.getElementById('btnSelfIn') : document.getElementById('btnSelfOut');
-            const originalText = btn.innerText;
-            btn.innerText = "\u23F3 Verifying Location...";
-            btn.disabled = true;
+            const originalText = btn.innerText; btn.innerText = "\u23F3 Verifying Location..."; btn.disabled = true;
 
-            // Enforce Geo-Location before saving to Firebase
             checkGeoLocation((allowed) => {
-                btn.innerText = originalText; // restore UI
-                btn.disabled = false;
+                btn.innerText = originalText; btn.disabled = false;
                 if(!allowed) return;
 
-                const staff = staffData[loggedInStaffId];
-                const now = new Date();
+                const staff = staffData[loggedInStaffId], now = new Date();
                 const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                 const time24 = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                const timeString = format12H(time24);
-                const ts = now.getTime();
+                const timeString = format12H(time24), ts = now.getTime();
 
                 if (type === 'in') {
-                    const shiftTime = new Date(`${dateStr}T${staff.shiftStart}:00`);
-                    shiftTime.setMinutes(shiftTime.getMinutes() + 15); 
-                    const status = now > shiftTime ? 'Late' : 'On Time';
-
+                    // 30 MIN GRACE PERIOD FOR PRESENT STATUS
+                    const shiftTime = new Date(`${dateStr}T${staff.shiftStart}:00`); 
+                    shiftTime.setMinutes(shiftTime.getMinutes() + 30); 
+                    const status = now > shiftTime ? 'Late' : 'Present';
+                    
                     db.ref(`attendance/${dateStr}/${loggedInStaffId}`).once('value').then(snap => {
-                        if(snap.exists() && snap.val().punchIn) { alert("You are already punched in!"); return; }
-                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({
-                            name: staff.name, punchIn: timeString, punchInTs: ts, status: status
-                        }).then(() => alert("Punched IN successfully!"));
+                        if(snap.exists() && snap.val().punchIn) return alert("You are already punched in!");
+                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({ name: staff.name, punchIn: timeString, punchInTs: ts, status: status }).then(() => alert("Punched IN successfully!"));
                     });
                 } else if (type === 'out') {
                     if(!confirm("Are you sure you want to punch out for the day?")) return;
-                    
                     db.ref(`attendance/${dateStr}/${loggedInStaffId}`).once('value').then(snap => {
-                        const data = snap.val();
-                        if(!data || !data.punchInTs) return;
-
-                        const workedMins = (ts - data.punchInTs) / (1000 * 60);
-                        const [sH, sM] = staff.shiftStart.split(':').map(Number);
-                        const [eH, eM] = staff.shiftEnd.split(':').map(Number);
+                        const data = snap.val(); if(!data || !data.punchInTs) return;
+                        const workedMins = (ts - data.punchInTs) / 60000;
+                        const [sH, sM] = staff.shiftStart.split(':').map(Number), [eH, eM] = staff.shiftEnd.split(':').map(Number);
                         const shiftMinsRequired = (eH * 60 + eM) - (sH * 60 + sM);
-
-                        let finalStatus = data.status; 
-                        if (workedMins < (shiftMinsRequired * 0.5)) finalStatus = 'Half Day';
-                        let otMins = Math.max(0, workedMins - shiftMinsRequired);
-                        const otHours = (otMins / 60).toFixed(2);
-
-                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({
-                            punchOut: timeString, punchOutTs: ts, otHours: parseFloat(otHours), status: finalStatus
-                        }).then(() => alert("Punched OUT successfully!"));
+                        let finalStatus = (workedMins < 300) ? 'Half Day' : data.status; 
+                        let otMins = Math.max(0, workedMins - shiftMinsRequired), otHours = (otMins / 60).toFixed(2);
+                        db.ref(`attendance/${dateStr}/${loggedInStaffId}`).update({ punchOut: timeString, punchOutTs: ts, otHours: parseFloat(otHours), status: finalStatus }).then(() => alert("Punched OUT successfully!"));
                     });
                 }
             });
         }
 
+        // ==========================================
+        // 8. STAFF PORTAL DATA LOADERS & HISTORY
+        // ==========================================
         function loadStaffPortalData() {
             const todayStr = getTodayDateString();
             if(currentListenerRef) currentListenerRef.off();
             currentListenerRef = db.ref(`attendance/${todayStr}/${loggedInStaffId}`);
-            
-            // 1. Live Today Card Listener
             currentListenerRef.on('value', (snap) => {
                 const log = snap.val();
-                
                 if (log && log.punchIn) {
                     hasPunchedInToday = true;
                     document.getElementById('staffSelfPunchInDiv').classList.add('hidden');
                     document.getElementById('staffActiveShift').classList.remove('hidden');
-                    
                     document.getElementById('staffPunchInDisplay').innerText = `Punched In: ${log.punchIn}`;
-                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : log.status;
+                    
+                    let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status === 'On Time' ? 'Present' : log.status);
                     document.getElementById('staffStatusDisplay').innerText = `Status: ${displayStatus}`;
                     
                     clearInterval(liveTimerInterval);
@@ -1180,12 +1103,9 @@
                         document.getElementById('staffSelfPunchOutDiv').classList.remove('hidden');
                         document.getElementById('pulseDot').style.display = 'inline-block';
                         document.getElementById('shiftTimerLabel').innerText = ' Live Shift Duration';
-
                         liveTimerInterval = setInterval(() => {
                             let diff = Date.now() - log.punchInTs;
-                            let hrs = Math.floor(diff / (1000 * 60 * 60));
-                            let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                            let secs = Math.floor((diff % (1000 * 60)) / 1000);
+                            let hrs = Math.floor(diff / 3600000), mins = Math.floor((diff % 3600000) / 60000), secs = Math.floor((diff % 60000) / 1000);
                             document.getElementById('liveStaffHours').innerText = `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
                         }, 1000);
                     } else {
@@ -1193,8 +1113,7 @@
                         document.getElementById('pulseDot').style.display = 'none';
                         document.getElementById('shiftTimerLabel').innerText = ' Shift Completed';
                         let diff = log.punchOutTs - log.punchInTs;
-                        let hrs = Math.floor(diff / (1000 * 60 * 60));
-                        let mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        let hrs = Math.floor(diff / 3600000), mins = Math.floor((diff % 3600000) / 60000);
                         document.getElementById('liveStaffHours').innerText = `${String(hrs).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`;
                         document.getElementById('liveStaffHours').style.color = "#3b82f6";
                     }
@@ -1205,174 +1124,207 @@
                 }
             });
 
-            // 2. Monthly Stats & History Listener
-            if(staffHistoryListener) staffHistoryListener.off();
-            staffHistoryListener = db.ref('attendance');
-            
-            staffHistoryListener.on('value', snap => {
-                const allData = snap.val() || {};
-                const now = new Date();
-                const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                
-                let p = 0, h = 0, a = 0;
-                let totalPassedDays = now.getDate(); 
+            // Set default month in staff history to Current Month
+            document.getElementById('staffHistoryMonth').value = todayStr.slice(0, 7);
 
-                for (let i = 1; i <= totalPassedDays; i++) {
-                    let dStr = `${monthPrefix}-${String(i).padStart(2, '0')}`;
-                    let rec = allData[dStr] ? allData[dStr][loggedInStaffId] : null;
-                    
-                    if (rec) {
-                        if (rec.status === 'On Time' || rec.status === 'Late') p++;
-                        else if (rec.status === 'Half Day') h++;
-                        else if (rec.status === 'Week Off' || rec.status === 'Absent') a++;
-                    } else {
-                        a++;
-                    }
-                }
-                
-                // Update Monthly Dashboard Summaries
-                let effectivePresent = p + (h * 0.5);
-                document.getElementById('staffTotalDays').innerText = totalPassedDays;
-                document.getElementById('staffPresentDays').innerText = effectivePresent;
-                document.getElementById('staffAbsentDays').innerText = a;
-
-                // Update Table Data
-                let historyHTML = "";
-                const dates = Object.keys(allData).sort((x, y) => new Date(y) - new Date(x));
-                let count = 0;
-                for (let dateKey of dates) {
-                    if(count >= 30) break; 
-                    const dayLogs = allData[dateKey];
-                    if(dayLogs && dayLogs[loggedInStaffId]) {
-                        const rec = dayLogs[loggedInStaffId];
-                        let statusClass = 'status-ontime';
-                        if(rec.status === 'Late') statusClass = 'status-late';
-                        if(rec.status === 'Week Off' || rec.status === 'Absent') statusClass = 'status-absent';
-                        if(rec.status === 'Half Day') statusClass = 'status-halfday';
-                        
-                        let displayStatus = (rec.status === 'Week Off') ? 'Absent' : (rec.status || 'N/A');
-
-                        historyHTML += `<tr><td>${dateKey}</td><td>${rec.punchIn || '--'}</td><td>${rec.punchOut || '--'}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td></tr>`;
-                        count++;
-                    }
-                }
-                if (historyHTML === "") historyHTML = "<tr><td colspan='4' style='text-align:center;'>No history found.</td></tr>";
-                document.getElementById('staffHistoryBody').innerHTML = historyHTML;
+            if(globalAttendanceListener) globalAttendanceListener.off();
+            globalAttendanceListener = db.ref('attendance');
+            globalAttendanceListener.on('value', snap => {
+                allAttendanceDataCache = snap.val() || {};
+                renderStaffDashboardStats();
+                renderStaffHistoryTable();
             });
         }
 
+        function calculateMonthStats(allData, staffId, monthStr) {
+            let p = 0, h = 0, a = 0;
+            const now = new Date();
+            const [y, m] = monthStr.split('-').map(Number);
+            let totalDays = new Date(y, m, 0).getDate();
+            
+            if (now.getFullYear() === y && now.getMonth() + 1 === m) {
+                totalDays = now.getDate();
+            } else if (new Date(y, m - 1, 1) > now) {
+                totalDays = 0; // future month selected
+            }
+
+            for (let i = 1; i <= totalDays; i++) {
+                let dStr = `${monthStr}-${String(i).padStart(2, '0')}`;
+                let rec = allData[dStr] ? allData[dStr][staffId] : null;
+                if (rec) {
+                    if (rec.status === 'Present' || rec.status === 'On Time' || rec.status === 'Late') p++;
+                    else if (rec.status === 'Half Day') h++;
+                    else if (rec.status === 'Week Off' || rec.status === 'Absent') a++;
+                } else a++;
+            }
+            return { totalDays, present: p + (h * 0.5), absent: a };
+        }
+
+        function buildCalendarHTML(staffId, monthStr) {
+            const [y, m] = monthStr.split('-').map(Number);
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const firstDay = new Date(y, m - 1, 1).getDay(); 
+            
+            let html = '<div class="calendar-grid">';
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for(let d of days) html += `<div class="calendar-day-header">${d}</div>`;
+            
+            for(let i = 0; i < firstDay; i++) {
+                html += `<div class="calendar-cell cal-empty"></div>`;
+            }
+            
+            for(let i = 1; i <= daysInMonth; i++) {
+                const dateKey = `${monthStr}-${String(i).padStart(2, '0')}`;
+                let rec = (allAttendanceDataCache[dateKey] && allAttendanceDataCache[dateKey][staffId]) ? allAttendanceDataCache[dateKey][staffId] : null;
+                
+                let cellClass = '';
+                let subText = '';
+                
+                const cellDate = new Date(y, m - 1, i);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                if (rec) {
+                    let st = rec.status;
+                    if (st === 'Present' || st === 'On Time') { cellClass = 'cal-present'; subText = 'Present'; }
+                    else if (st === 'Late') { cellClass = 'cal-late'; subText = 'Late'; }
+                    else if (st === 'Half Day') { cellClass = 'cal-half'; subText = 'Half Day'; }
+                    else if (st === 'Absent' || st === 'Week Off') { cellClass = 'cal-absent'; subText = 'Absent'; }
+                } else {
+                    if (cellDate <= today) { cellClass = 'cal-absent'; subText = 'Absent'; }
+                }
+                
+                html += `<div class="calendar-cell ${cellClass}">
+                            <div>${i}</div>
+                            <div class="cal-date-text">${subText}</div>
+                         </div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderStaffDashboardStats() {
+            if(!loggedInStaffId) return;
+            const currentMonthStr = getTodayDateString().slice(0, 7);
+            const stats = calculateMonthStats(allAttendanceDataCache, loggedInStaffId, currentMonthStr);
+            document.getElementById('dashStaffTotal').innerText = stats.totalDays;
+            document.getElementById('dashStaffPresent').innerText = stats.present;
+            document.getElementById('dashStaffAbsent').innerText = stats.absent;
+        }
+
+        function renderStaffHistoryTable() {
+            if(!loggedInStaffId) return;
+            const selectedMonth = document.getElementById('staffHistoryMonth').value;
+            if(!selectedMonth) return;
+
+            const stats = calculateMonthStats(allAttendanceDataCache, loggedInStaffId, selectedMonth);
+            document.getElementById('histStaffTotal').innerText = stats.totalDays;
+            document.getElementById('histStaffPresent').innerText = stats.present;
+            document.getElementById('histStaffAbsent').innerText = stats.absent;
+
+            const calendarHTML = buildCalendarHTML(loggedInStaffId, selectedMonth);
+            document.getElementById('staffHistoryCalendarContainer').innerHTML = calendarHTML;
+        }
+
         // ==========================================
-        // 8. MODAL EDITING LOGIC (Admin Only)
+        // 9. ADMIN STAFF HISTORY
+        // ==========================================
+        function openSelectedStaffHistory(passedId) {
+            const staffId = passedId;
+            if(!staffId) return;
+            
+            currentAdminHistoryStaffId = staffId;
+            document.getElementById('historyStaffName').innerText = staffData[staffId].name;
+            document.getElementById('adminHistoryMonth').value = getTodayDateString().slice(0, 7);
+            document.getElementById('historyModal').classList.remove('hidden');
+
+            db.ref('attendance').once('value').then(snap => {
+                allAttendanceDataCache = snap.val() || {};
+                renderAdminHistoryTable();
+            });
+        }
+
+        function renderAdminHistoryTable() {
+            if(!currentAdminHistoryStaffId) return;
+            const selectedMonth = document.getElementById('adminHistoryMonth').value;
+            if(!selectedMonth) return;
+
+            const stats = calculateMonthStats(allAttendanceDataCache, currentAdminHistoryStaffId, selectedMonth);
+            document.getElementById('adminHistTotal').innerText = stats.totalDays;
+            document.getElementById('adminHistPresent').innerText = stats.present;
+            document.getElementById('adminHistAbsent').innerText = stats.absent;
+
+            const calendarHTML = buildCalendarHTML(currentAdminHistoryStaffId, selectedMonth);
+            document.getElementById('adminHistoryCalendarContainer').innerHTML = calendarHTML;
+        }
+
+        function closeHistoryModal() { document.getElementById('historyModal').classList.add('hidden'); }
+
+        // ==========================================
+        // 10. MODAL EDITING LOGIC (Admin Only)
         // ==========================================
         function openEditModal(id, name, pIn, pOut, status) {
             document.getElementById('editStaffId').value = id;
             document.getElementById('editStaffName').innerText = name;
             document.getElementById('editPunchIn').value = pIn === '--' ? '' : pIn;
             document.getElementById('editPunchOut').value = pOut === '--' ? '' : pOut;
-            document.getElementById('editStatus').value = (status === 'Week Off') ? 'Absent' : status;
+            document.getElementById('editStatus').value = (status === 'Week Off' || status === 'Absent') ? 'Absent' : (status === 'On Time' ? 'Present' : status);
             document.getElementById('editModal').classList.remove('hidden');
         }
         function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
-        
         function saveEdit() {
-            const id = document.getElementById('editStaffId').value;
-            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            const id = document.getElementById('editStaffId').value, targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
             db.ref(`attendance/${targetDateStr}/${id}`).update({
-                punchIn: document.getElementById('editPunchIn').value,
-                punchOut: document.getElementById('editPunchOut').value,
-                status: document.getElementById('editStatus').value
+                punchIn: document.getElementById('editPunchIn').value, punchOut: document.getElementById('editPunchOut').value, status: document.getElementById('editStatus').value
             }).then(() => closeEditModal());
         }
-
         function deleteDailyEntry() {
-            if (currentUserRole !== 'admin') { alert("Unauthorized"); return; }
-            const id = document.getElementById('editStaffId').value;
-            const name = document.getElementById('editStaffName').innerText;
-            const targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
+            if (currentUserRole !== 'admin') return alert("Unauthorized");
+            const id = document.getElementById('editStaffId').value, name = document.getElementById('editStaffName').innerText, targetDateStr = document.getElementById('globalViewDate').value || getTodayDateString();
             if (confirm(`Permanently delete the attendance record for ${name} on ${targetDateStr}?`)) {
                 db.ref(`attendance/${targetDateStr}/${id}`).remove().then(() => closeEditModal());
             }
         }
 
         function openEditStaffModal(id, name, role, start, end, pin) {
-            document.getElementById('editStaffProfileId').value = id;
-            document.getElementById('editStaffProfileName').value = name;
-            document.getElementById('editStaffProfileRole').value = role;
-            document.getElementById('editStaffProfileStart').value = start;
-            document.getElementById('editStaffProfileEnd').value = end;
-            document.getElementById('editStaffProfilePin').value = pin;
+            document.getElementById('editStaffProfileId').value = id; document.getElementById('editStaffProfileName').value = name;
+            document.getElementById('editStaffProfileRole').value = role; document.getElementById('editStaffProfileStart').value = start;
+            document.getElementById('editStaffProfileEnd').value = end; document.getElementById('editStaffProfilePin').value = pin;
             document.getElementById('editStaffModal').classList.remove('hidden');
         }
         function closeEditStaffModal() { document.getElementById('editStaffModal').classList.add('hidden'); }
-        
         function saveStaffEdit() {
-            const id = document.getElementById('editStaffProfileId').value;
-            const name = document.getElementById('editStaffProfileName').value;
-            const role = document.getElementById('editStaffProfileRole').value;
-            const start = document.getElementById('editStaffProfileStart').value;
-            const end = document.getElementById('editStaffProfileEnd').value;
-            const pin = document.getElementById('editStaffProfilePin').value;
-
-            if(!name || !role || !start || !end || !pin) { alert("All fields required!"); return; }
-
-            db.ref(`staff/${id}`).update({ name, role, shiftStart: start, shiftEnd: end, pin }).then(() => {
-                alert("Profile updated!"); closeEditStaffModal();
-            });
+            const id = document.getElementById('editStaffProfileId').value, name = document.getElementById('editStaffProfileName').value;
+            const role = document.getElementById('editStaffProfileRole').value, start = document.getElementById('editStaffProfileStart').value;
+            const end = document.getElementById('editStaffProfileEnd').value, pin = document.getElementById('editStaffProfilePin').value;
+            if(!name || !role || !start || !end || !pin) return alert("All fields required!");
+            db.ref(`staff/${id}`).update({ name, role, shiftStart: start, shiftEnd: end, pin }).then(() => { alert("Profile updated!"); closeEditStaffModal(); });
         }
         function deleteStaff() {
             const id = document.getElementById('editStaffProfileId').value;
-            if (confirm(`Permanently delete this profile?`)) {
-                db.ref(`staff/${id}`).remove().then(() => closeEditStaffModal());
-            }
+            if (confirm(`Permanently delete this profile?`)) db.ref(`staff/${id}`).remove().then(() => closeEditStaffModal());
         }
-
-        // ==========================================
-        // 9. NEW: ADMIN HISTORY VIEWER
-        // ==========================================
-        function viewStaffHistory(staffId, staffName) {
-            document.getElementById('historyStaffName').innerText = staffName;
-            document.getElementById('adminHistoryBody').innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
-            document.getElementById('historyModal').classList.remove('hidden');
-
-            db.ref('attendance').once('value').then(snap => {
-                const allData = snap.val() || {};
-                let html = "";
-                // Sort dates Descending
-                const dates = Object.keys(allData).sort((a, b) => new Date(b) - new Date(a)); 
-                
-                for(let dStr of dates) {
-                    if(allData[dStr][staffId]) {
-                        let rec = allData[dStr][staffId];
-                        let statusClass = 'status-ontime';
-                        if(rec.status === 'Late') statusClass = 'status-late';
-                        if(rec.status === 'Absent' || rec.status === 'Week Off') statusClass = 'status-absent';
-                        if(rec.status === 'Half Day') statusClass = 'status-halfday';
-                        
-                        let dispStatus = (rec.status === 'Week Off') ? 'Absent' : rec.status;
-                        
-                        html += `<tr><td>${dStr}</td><td>${rec.punchIn || '--'}</td><td>${rec.punchOut || '--'}</td><td><span class="status-badge ${statusClass}">${dispStatus || 'N/A'}</span></td></tr>`;
-                    }
-                }
-                if(!html) html = "<tr><td colspan='4' style='text-align:center;'>No attendance history found.</td></tr>";
-                document.getElementById('adminHistoryBody').innerHTML = html;
+        function updateStaffPin() {
+            const currentPin = document.getElementById('staffCurrentPin').value, newPin = document.getElementById('staffNewPin').value, confirmPin = document.getElementById('staffConfirmPin').value;
+            if (!loggedInStaffId || !staffData[loggedInStaffId]) return;
+            if (currentPin !== (staffData[loggedInStaffId].pin || "1234")) return alert("Current PIN is incorrect!");
+            if (newPin.length !== 4 || isNaN(newPin)) return alert("New PIN must be exactly 4 digits!");
+            if (newPin !== confirmPin) return alert("New PINs do not match!");
+            db.ref(`staff/${loggedInStaffId}`).update({ pin: newPin }).then(() => {
+                alert("Your Login PIN has been updated successfully!"); document.getElementById('staffCurrentPin').value = ''; document.getElementById('staffNewPin').value = ''; document.getElementById('staffConfirmPin').value = '';
             });
         }
-        function closeHistoryModal() {
-            document.getElementById('historyModal').classList.add('hidden');
-        }
 
         // ==========================================
-        // 10. HR EXCEL EXPORT LOGIC (Fixed Logic)
+        // 11. HR EXCEL EXPORT LOGIC
         // ==========================================
         function exportExcel() {
             const monthStr = document.getElementById('reportMonth').value; 
-            if(!monthStr) { alert("Please select a month"); return; }
-            const [year, month] = monthStr.split('-');
-            const daysInMonth = new Date(year, month, 0).getDate();
+            if(!monthStr) return alert("Please select a month");
+            const [year, month] = monthStr.split('-'); const daysInMonth = new Date(year, month, 0).getDate();
 
             db.ref('attendance').once('value').then(snap => {
-                const allData = snap.val() || {};
-                const stats = {};
+                const allData = snap.val() || {}, stats = {};
                 for(let key in staffData) stats[key] = { name: staffData[key].name, present: 0, halfday: 0, absent: 0, ot: 0 };
 
                 for(let dateKey in allData) {
@@ -1380,41 +1332,23 @@
                         for(let sId in allData[dateKey]) {
                             if(stats[sId]) {
                                 const record = allData[dateKey][sId];
-                                
-                                if(record.status === 'On Time' || record.status === 'Late') {
-                                    stats[sId].present++;
-                                }
-                                else if(record.status === 'Half Day') {
-                                    stats[sId].halfday++;
-                                }
-                                else if(record.status === 'Week Off' || record.status === 'Absent') {
-                                    stats[sId].absent++;
-                                }
-                                
+                                if(record.status === 'Present' || record.status === 'On Time' || record.status === 'Late') stats[sId].present++;
+                                else if(record.status === 'Half Day') stats[sId].halfday++;
+                                else if(record.status === 'Week Off' || record.status === 'Absent') stats[sId].absent++;
                                 if(record.otHours) stats[sId].ot += record.otHours;
                             }
                         }
                     }
                 }
 
-                // Add Month Column to CSV
-                let csv = "S.No,Staff Name,Report Month,Total Month Days,Present Days (inc. Half Days),Absent Days,OT Hrs (Net),Extra Days\n";
-                let index = 1;
+                let csv = "S.No,Staff Name,Report Month,Total Month Days,Present Days (inc. Half Days),Absent Days,OT Hrs (Net),Extra Days\n", index = 1;
                 for(let sId in stats) {
-                    const st = stats[sId];
-                    // 1 Half Day = 0.5 Present Days
-                    let effectivePresent = st.present + (st.halfday * 0.5);
-                    let extraDays = effectivePresent > 26 ? (effectivePresent - 26) : 0;
-                    
-                    csv += `${index},${st.name},${monthStr},${daysInMonth},${effectivePresent},${st.absent},${st.ot.toFixed(2)},${extraDays}\n`;
-                    index++;
+                    const st = stats[sId], effectivePresent = st.present + (st.halfday * 0.5), extraDays = effectivePresent > 26 ? (effectivePresent - 26) : 0;
+                    csv += `${index},${st.name},${monthStr},${daysInMonth},${effectivePresent},${st.absent},${st.ot.toFixed(2)},${extraDays}\n`; index++;
                 }
 
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }), url = window.URL.createObjectURL(blob), link = document.createElement('a');
+                link.setAttribute('href', url); link.setAttribute('download', `URBAN_CASA_HR_Report_${monthStr}.csv`);
                 document.body.appendChild(link); link.click(); document.body.removeChild(link);
             });
         }

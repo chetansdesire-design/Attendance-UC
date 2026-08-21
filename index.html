@@ -529,11 +529,27 @@
 
     <!-- Modals -->
 
+    <!-- Quick Action Modal (Admin/Ankit Calendar Click) - UPDATED WITH Z-INDEX 1500 -->
+    <div id="quickActionModal" class="modal hidden" style="z-index: 1500;">
+        <div class="modal-content" style="text-align: center; max-width: 350px;">
+            <h3 style="color: #00c6ff; margin-bottom: 5px; margin-top: 0;">Quick Attendance Mark</h3>
+            <p id="qaSubtitle" style="font-size: 13px; margin-top: 0; opacity: 0.8; margin-bottom: 20px;"></p>
+            <input type="hidden" id="qaStaffId">
+            <input type="hidden" id="qaDate">
+            
+            <button class="btn-success" style="padding: 15px; font-size: 16px; margin-bottom: 10px;" onclick="saveQuickAction('Present')">✅ Mark Present</button>
+            <button class="btn-warning" style="padding: 15px; font-size: 16px; margin-bottom: 10px;" onclick="saveQuickAction('Half Day')">🌗 Mark Half Day</button>
+            <button class="btn-danger"  style="padding: 15px; font-size: 16px; margin-bottom: 10px;" onclick="saveQuickAction('Absent')">❌ Mark Absent</button>
+            
+            <button class="btn-primary" style="margin-top: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);" onclick="closeQuickActionModal()">Cancel</button>
+        </div>
+    </div>
+
     <!-- Admin History Modal (Calendar View) -->
     <div id="historyModal" class="modal hidden">
         <div class="modal-content">
             <h3 style="color: #00c6ff; margin-bottom: 5px;">History: <span id="historyStaffName"></span></h3>
-            <p style="font-size: 11px; color: #f59e0b; margin-top: 0; margin-bottom: 15px;">💡 Admin Tip: Tap on any past date in the calendar below to instantly mark it as Present.</p>
+            <p style="font-size: 11px; color: #f59e0b; margin-top: 0; margin-bottom: 15px;">💡 Admin Tip: Tap on any past date in the calendar to instantly update attendance.</p>
             
             <div class="flex-responsive" style="margin-bottom: 15px;">
                 <input type="month" id="adminHistoryMonth" style="margin-bottom: 0;" onchange="renderAdminHistoryTable()">
@@ -561,7 +577,7 @@
         </div>
     </div>
 
-    <!-- Edit Daily Entry Modal (Admin Only) -->
+    <!-- Edit Daily Entry Modal (Admin Only - from Dashboard) -->
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <h3>Edit Entry: <span id="editStaffName"></span></h3>
@@ -990,7 +1006,6 @@
                     let displayStatus = (log.status === 'Week Off') ? 'Absent' : (log.status === 'On Time' ? 'Present' : log.status || 'N/A');
                     const pIn = log.punchIn || '--', pOut = log.punchOut ? log.punchOut : '--';
                     
-                    // Both admin AND ankit get edit rights here if needed, but per previous logic, only admin for Dashboard edit table
                     let adminAction = (currentUserRole === 'admin') ? `<td><button class="btn-warning btn-small" onclick="openEditModal('${staffId}', '${log.name}', '${viewDateStr}', '${pIn}', '${pOut}', '${displayStatus}')">Edit</button></td>` : '';
                     reportHTML += `<tr><td><strong>${log.name}</strong></td><td>${pIn}</td><td>${pOut}</td><td><span class="status-badge ${statusClass}">${displayStatus}</span></td>${adminAction}</tr>`;
 
@@ -1230,7 +1245,7 @@
         }
 
         // ==========================================
-        // 8.B BUILD CALENDAR WITH ADMIN CLICK-TO-PRESENT 
+        // 8.B BUILD CALENDAR WITH ADMIN CLICK-MENU
         // ==========================================
         function buildCalendarHTML(staffId, monthStr, isForAdmin = false) {
             const [y, m] = monthStr.split('-').map(Number);
@@ -1271,7 +1286,7 @@
                 
                 // If it is Ankit or Admin looking at the history, enable Quick Punch!
                 if (isForAdmin && cellDate <= today) {
-                    adminClickAttr = `onclick="adminQuickMarkPresent('${staffId}', '${dateKey}')"`;
+                    adminClickAttr = `onclick="adminQuickMark('${staffId}', '${dateKey}')"`;
                     adminHoverClass = 'admin-clickable';
                 }
 
@@ -1284,35 +1299,66 @@
             return html;
         }
 
-        // --- NEW ADMIN QUICK-PUNCH CALENDAR ACTION ---
-        function adminQuickMarkPresent(staffId, dateStr) {
+        // --- NEW ADMIN QUICK-PUNCH MENU LOGIC ---
+        function adminQuickMark(staffId, dateStr) {
             if(currentUserRole !== 'admin' && currentUserRole !== 'ankit') return;
             const staff = staffData[staffId];
             
-            if(!confirm(`Quick Edit: Mark ${staff.name} as PRESENT for ${dateStr}?`)) return;
+            document.getElementById('qaStaffId').value = staffId;
+            document.getElementById('qaDate').value = dateStr;
+            document.getElementById('qaSubtitle').innerHTML = `Staff: <strong>${staff.name}</strong> <br> Date: <strong>${dateStr}</strong>`;
             
-            // Assign default shift in/out so the HR Excel report calculations work perfectly
-            const pIn = format12H(staff.shiftStart);
-            const pOut = format12H(staff.shiftEnd);
-            const pInTs = getTimestamp(dateStr, staff.shiftStart);
-            const pOutTs = getTimestamp(dateStr, staff.shiftEnd);
+            document.getElementById('quickActionModal').classList.remove('hidden');
+        }
+
+        function closeQuickActionModal() {
+            document.getElementById('quickActionModal').classList.add('hidden');
+        }
+
+        function saveQuickAction(status) {
+            const staffId = document.getElementById('qaStaffId').value;
+            const dateStr = document.getElementById('qaDate').value;
+            const staff = staffData[staffId];
             
+            let pIn = null, pOut = null, pInTs = null, pOutTs = null;
+
+            if (status === 'Present') {
+                pIn = format12H(staff.shiftStart);
+                pOut = format12H(staff.shiftEnd);
+                pInTs = getTimestamp(dateStr, staff.shiftStart);
+                pOutTs = getTimestamp(dateStr, staff.shiftEnd);
+            } else if (status === 'Half Day') {
+                pIn = format12H(staff.shiftStart);
+                // Auto calculate a 4 hour half shift
+                let [sH, sM] = staff.shiftStart.split(':').map(Number);
+                let halfEndH = sH + 4;
+                let halfEndStr = `${String(halfEndH).padStart(2, '0')}:${String(sM).padStart(2, '0')}`;
+                pOut = format12H(halfEndStr);
+                pInTs = getTimestamp(dateStr, staff.shiftStart);
+                pOutTs = getTimestamp(dateStr, halfEndStr);
+            }
+
             db.ref(`attendance/${dateStr}/${staffId}`).update({
                 name: staff.name,
-                status: 'Present',
+                status: status,
                 punchIn: pIn,
                 punchOut: pOut,
                 punchInTs: pInTs,
                 punchOutTs: pOutTs,
                 otHours: 0
             }).then(() => {
+                closeQuickActionModal();
                 const toast = document.getElementById('notificationToast');
-                toast.innerText = `✅ Success: ${staff.name} marked Present on ${dateStr}`;
-                toast.style.background = "#10b981";
+                toast.innerText = `✅ Success: ${staff.name} marked as ${status} on ${dateStr}`;
+                
+                // Color code the success toast based on action
+                toast.style.background = (status === 'Absent') ? "#ff416c" : (status === 'Half Day' ? "#f59e0b" : "#10b981");
+                
                 toast.classList.remove('hidden');
                 setTimeout(() => { toast.classList.add('hidden'); toast.style.background = "#ff416c"; }, 3000);
             });
         }
+
 
         function renderStaffDashboardStats() {
             if(!loggedInStaffId) return;
